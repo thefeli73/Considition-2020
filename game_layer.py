@@ -6,8 +6,8 @@ from game_state import GameState
 
 class GameLayer:
     def __init__(self, api_key):
-        self.game_state: GameState = None
-        self.api_key: str = api_key
+        self.game_state = GameState
+        self.api_key = api_key
     
     def new_game(self, map_name: str = "training0"):
         """
