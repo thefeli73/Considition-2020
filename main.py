@@ -23,42 +23,54 @@ def take_turn():
     # TODO Implement your artificial intelligence here.
     # TODO Take one action per turn until the game ends.
     # TODO The following is a short example of how to use the StarterKit
+    if not useTestStrategy:
+        state = game_layer.game_state
 
-    state = game_layer.game_state
-    if len(state.residences) < 1:
-        for i in range(len(state.map)):
-            for j in range(len(state.map)):
-                if state.map[i][j] == 0:
-                    x = i
-                    y = j
-                    break
-        game_layer.place_foundation((x, y), game_layer.game_state.available_residence_buildings[0].building_name)
-    else:
-        the_only_residence = state.residences[0]
-        if the_only_residence.build_progress < 100:
-            game_layer.build((the_only_residence.X, the_only_residence.Y))
-        elif the_only_residence.health < 50:
-            game_layer.maintenance((the_only_residence.X, the_only_residence.Y))
-        elif the_only_residence.temperature < 18:
-            blueprint = game_layer.get_residence_blueprint(the_only_residence.building_name)
-            energy = blueprint.base_energy_need + 0.5 \
-                     + (the_only_residence.temperature - state.current_temp) * blueprint.emissivity / 1 \
-                     - the_only_residence.current_pop * 0.04
-            game_layer.adjust_energy_level((the_only_residence.X, the_only_residence.Y), energy)
-        elif the_only_residence.temperature > 24:
-            blueprint = game_layer.get_residence_blueprint(the_only_residence.building_name)
-            energy = blueprint.base_energy_need - 0.5 \
-                     + (the_only_residence.temperature - state.current_temp) * blueprint.emissivity / 1 \
-                     - the_only_residence.current_pop * 0.04
-            game_layer.adjust_energy_level((the_only_residence.X, the_only_residence.Y), energy)
-        elif state.available_upgrades[0].name not in the_only_residence.effects:
-            game_layer.buy_upgrade((the_only_residence.X, the_only_residence.Y), state.available_upgrades[0].name)
+        # messages and errors for console log
+        for message in game_layer.game_state.messages:
+            print(message)
+        for error in game_layer.game_state.errors:
+            print("Error: " + error)
+
+    # pre-made test strategy
+    # which came with
+    # starter kit
+    if useTestStrategy:
+        state = game_layer.game_state
+        if len(state.residences) < 1:
+            for i in range(len(state.map)):
+                for j in range(len(state.map)):
+                    if state.map[i][j] == 0:
+                        x = i
+                        y = j
+                        break
+            game_layer.place_foundation((x, y), game_layer.game_state.available_residence_buildings[0].building_name)
         else:
-            game_layer.wait()
-    for message in game_layer.game_state.messages:
-        print(message)
-    for error in game_layer.game_state.errors:
-        print("Error: " + error)
+            the_only_residence = state.residences[0]
+            if the_only_residence.build_progress < 100:
+                game_layer.build((the_only_residence.X, the_only_residence.Y))
+            elif the_only_residence.health < 50:
+                game_layer.maintenance((the_only_residence.X, the_only_residence.Y))
+            elif the_only_residence.temperature < 18:
+                blueprint = game_layer.get_residence_blueprint(the_only_residence.building_name)
+                energy = blueprint.base_energy_need + 0.5 \
+                         + (the_only_residence.temperature - state.current_temp) * blueprint.emissivity / 1 \
+                         - the_only_residence.current_pop * 0.04
+                game_layer.adjust_energy_level((the_only_residence.X, the_only_residence.Y), energy)
+            elif the_only_residence.temperature > 24:
+                blueprint = game_layer.get_residence_blueprint(the_only_residence.building_name)
+                energy = blueprint.base_energy_need - 0.5 \
+                         + (the_only_residence.temperature - state.current_temp) * blueprint.emissivity / 1 \
+                         - the_only_residence.current_pop * 0.04
+                game_layer.adjust_energy_level((the_only_residence.X, the_only_residence.Y), energy)
+            elif state.available_upgrades[0].name not in the_only_residence.effects:
+                game_layer.buy_upgrade((the_only_residence.X, the_only_residence.Y), state.available_upgrades[0].name)
+            else:
+                game_layer.wait()
+        for message in game_layer.game_state.messages:
+            print(message)
+        for error in game_layer.game_state.errors:
+            print("Error: " + error)
 
 
 if __name__ == "__main__":
