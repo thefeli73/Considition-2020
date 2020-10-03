@@ -12,6 +12,7 @@ api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 
 game_layer = GameLayer(api_key)
+state = game_layer.game_state
 usePrebuiltStrategy = False
 
 
@@ -76,12 +77,12 @@ def linus_take_turn():
         print("Error: " + error)
 
 def take_turn():
-    # TODO Implement your artificial intelligence here.
-    # TODO Take one action per turn until the game ends.
-    # TODO The following is a short example of how to use the StarterKit
     if not usePrebuiltStrategy:
-        state = game_layer.game_state
-        print("testrunda")
+        # TODO Implement your artificial intelligence here.
+        # TODO Take one action per turn until the game ends.
+        # TODO The following is a short example of how to use the StarterKit
+
+
         # messages and errors for console log
         for message in game_layer.game_state.messages:
             print(message)
@@ -129,6 +130,12 @@ def take_turn():
         for error in game_layer.game_state.errors:
             print("Error: " + error)
 
+def chartMap():
+    availableTiles = []
+    for x in range(len(state.map) - 1):
+        for y in range(len(state.map) - 1):
+            if state.map[x][y] == 0:
+                availableTiles.append((x, y))
 
 if __name__ == "__main__":
     main()
