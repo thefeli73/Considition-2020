@@ -52,6 +52,7 @@ def end_game(api_key, game_id=None):
             sess = requests.Session()
         response = sess.get(base_api_path + "end" + game_id, headers={"x-api-key": api_key})
         if response.status_code == 200:
+            print("Game ended succesfully")
             return
 
         print("Fatal Error: could not end game")

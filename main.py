@@ -1,4 +1,6 @@
 # import api
+import time
+from sys import exit
 from game_layer import GameLayer
 
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
@@ -10,13 +12,21 @@ useTestStrategy = False
 
 
 def main():
+    #game_layer.force_end_game()
     game_layer.new_game(map_name)
     print("Starting game: " + game_layer.game_state.game_id)
     game_layer.start_game()
+    # exit game after timeout
+    start_time = time.time()
     while game_layer.game_state.turn < game_layer.game_state.max_turns:
         take_turn()
+        time_diff = time.time() - start_time
+        if time_diff > 5:
+            game_layer.end_game()
+            exit()
     print("Done with game: " + game_layer.game_state.game_id)
     print("Final score was: " + str(game_layer.get_score()["finalScore"]))
+
 
 
 def take_turn():
@@ -25,12 +35,13 @@ def take_turn():
     # TODO The following is a short example of how to use the StarterKit
     if not useTestStrategy:
         state = game_layer.game_state
-
+        print("testrunda")
         # messages and errors for console log
         for message in game_layer.game_state.messages:
             print(message)
         for error in game_layer.game_state.errors:
             print("Error: " + error)
+
 
     # pre-made test strategy
     # which came with

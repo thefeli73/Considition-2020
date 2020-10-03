@@ -26,6 +26,12 @@ class GameLayer:
         """
         api.end_game(self.api_key, self.game_state.game_id)
 
+    def force_end_game(self):
+        """
+        End the current game without gameID
+        """
+        api.end_game(self.api_key)
+
     def start_game(self):
         """
         Starts the game.
