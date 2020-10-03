@@ -81,7 +81,10 @@ def take_turn():
         # TODO Implement your artificial intelligence here.
         # TODO Take one action per turn until the game ends.
         # TODO The following is a short example of how to use the StarterKit
-
+        if something_needs_attention():
+            pass
+        else:
+            develop_society()
 
         # messages and errors for console log
         for message in game_layer.game_state.messages:
@@ -130,13 +133,39 @@ def take_turn():
         for error in game_layer.game_state.errors:
             print("Error: " + error)
 
+
 def chartMap():
+    state = game_layer.game_state
     availableTiles = []
     for x in range(len(state.map) - 1):
         for y in range(len(state.map) - 1):
             if state.map[x][y] == 0:
                 availableTiles.append((x, y))
+
+
 def optimizeAvailableTiles():
     pass
+
+
+def adjustEnergy(current_building, target_temp):
+    current_blueprint = game_layer.get_residence_blueprint(current_building.building_name)
+
+    base_energy_need = current_blueprint.base_energy_need
+    indoor_temp = current_building.temperature
+    degrees_per_pop = 0.04
+    current_pop = current_building.current_pop
+    outdoor_temp = game_layer.game_state.current_temp
+    emissivity = current_blueprint.emissivity
+    degrees_per_excess_mwh = 0.75
+
+    effective_energy_in = -1 * (base_energy_need + (indoor_temp + degrees_per_pop * current_pop - (indoor_temp - outdoor_temp) * emissivity - target_temp)/degrees_per_excess_mwh)
+    game_layer.adjust_energy_level((current_building.X, current_building.Y), effective_energy_in)
+
+def something_needs_attention():
+    pass
+
+def develop_society():
+    pass
+
 if __name__ == "__main__":
     main()
