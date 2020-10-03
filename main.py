@@ -23,10 +23,12 @@ def main():
     game_layer.start_game()
     # exit game after timeout
     start_time = time.time()
+    chartMap()
+    optimizeAvailableTiles()
     while game_layer.game_state.turn < game_layer.game_state.max_turns:
         try:
             take_turn()
-        except:
+        except Exception:
             print(traceback.format_exc())
             game_layer.end_game()
             exit()
@@ -135,6 +137,7 @@ def chartMap():
         for y in range(len(state.map) - 1):
             if state.map[x][y] == 0:
                 availableTiles.append((x, y))
-
+def optimizeAvailableTiles():
+    pass
 if __name__ == "__main__":
     main()
