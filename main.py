@@ -38,12 +38,12 @@ def main():
 
 
 def take_turn():
-    # TODO Implement your artificial intelligence here.
-    # TODO Take one action per turn until the game ends.
-    # TODO The following is a short example of how to use the StarterKit
     if not usePrebuiltStrategy:
-        state = game_layer.game_state
-        print("testrunda")
+        # TODO Implement your artificial intelligence here.
+        # TODO Take one action per turn until the game ends.
+        # TODO The following is a short example of how to use the StarterKit
+
+
         # messages and errors for console log
         for message in game_layer.game_state.messages:
             print(message)
@@ -91,6 +91,12 @@ def take_turn():
         for error in game_layer.game_state.errors:
             print("Error: " + error)
 
+def chartMap():
+    availableTiles = []
+    for x in range(len(state.map) - 1):
+        for y in range(len(state.map) - 1):
+            if state.map[x][y] == 0:
+                availableTiles.append((x, y))
 
 if __name__ == "__main__":
     main()
