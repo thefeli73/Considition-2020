@@ -21,34 +21,48 @@ def main():
     start_time = time.time()
     while game_layer.game_state.turn < game_layer.game_state.max_turns:
         try:
-            take_turn()
+            linus_take_turn()
         except:
-            e = sys.exc_info()[0]
-            print(e)
+            print(traceback.format_exc())
             game_layer.end_game()
             exit()
         time_diff = time.time() - start_time
-        if time_diff > 40:
+        if time_diff > timeUntilRunEnds:
             game_layer.end_game()
             exit()
     print("Done with game: " + game_layer.game_state.game_id)
     print("Final score was: " + str(game_layer.get_score()["finalScore"]))
 
 def linus_take_turn():
-    mylist = []
+    freeSpace = []
+
     state = game_layer.game_state
     for i in range(len(state.map)-1):
         for j in range(len(state.map)-1):
             if state.map[i][j] == 0:
-                mylist.append((i,j))
+                freeSpace.append((i,j))
 
     #print(mylist)
 
     if (game_layer.game_state.turn == 0):
-        game_layer.place_foundation(mylist[0], game_layer.game_state.available_residence_buildings[0].building_name)
-    the_only_residence = state.residences[0]
-    if the_only_residence.build_progress < 100:
-        game_layer.build(mylist[0])
+        game_layer.place_foundation(freeSpace[2], game_layer.game_state.available_residence_buildings[0].building_name)
+    the_first_residence = state.residences[0]
+    if the_first_residence.build_progress < 100:
+        game_layer.build(freeSpace[2])
+    if len(state.residences)==1:
+        game_layer.place_foundation(freeSpace[3], game_layer.game_state.available_residence_buildings[4].building_name)
+    the_second_residence = state.residences[1]
+    if the_second_residence.build_progress < 100:
+        game_layer.build(freeSpace[3])
+    elif the_first_residence.health < 70:
+        game_layer.maintenance(freeSpace[2])
+    elif the_second_residence.health < 70:
+        game_layer.maintenance(freeSpace[3])
+    elif (the_second_residence.health > 70) and not len(state.utilities) > 0:
+        game_layer.place_foundation(freeSpace[4], game_layer.game_state.available_utility_buildings[2].building_name)
+    elif (state.utilities[0].build_progress < 100):
+        game_layer.build(freeSpace[4])
+
     else:
     # messages and errors for console log
         game_layer.wait()
@@ -61,7 +75,7 @@ def take_turn():
     # TODO Implement your artificial intelligence here.
     # TODO Take one action per turn until the game ends.
     # TODO The following is a short example of how to use the StarterKit
-    if not useTestStrategy:
+    if not usePrebuiltStrategy:
         state = game_layer.game_state
         print("testrunda")
         # messages and errors for console log
@@ -74,7 +88,7 @@ def take_turn():
     # pre-made test strategy
     # which came with
     # starter kit
-    if useTestStrategy:
+    if usePrebuiltStrategy:
         state = game_layer.game_state
         if len(state.residences) < 1:
             for i in range(len(state.map)):
@@ -110,10 +124,6 @@ def take_turn():
             print(message)
         for error in game_layer.game_state.errors:
             print("Error: " + error)
-
-def available_ground():
-
-
 
 
 if __name__ == "__main__":
