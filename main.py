@@ -5,8 +5,6 @@ from sys import exit
 from game_layer import GameLayer
 import traceback
 
-timeUntilRunEnds = 30
-
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 # The different map names can be found on considition.com/rules
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
@@ -14,6 +12,7 @@ map_name = "training1"  # TODO: You map choice here. If left empty, the map "tra
 game_layer = GameLayer(api_key)
 state = game_layer.game_state
 usePrebuiltStrategy = False
+timeUntilRunEnds = 30
 
 
 def main():
@@ -26,7 +25,7 @@ def main():
     start_time = time.time()
     while game_layer.game_state.turn < game_layer.game_state.max_turns:
         try:
-            linus_take_turn()
+            take_turn()
         except:
             print(traceback.format_exc())
             game_layer.end_game()
