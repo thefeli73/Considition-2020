@@ -3,16 +3,20 @@ import time
 import sys
 from sys import exit
 from game_layer import GameLayer
+import traceback
+
+timeUntilRunEnds = 30
 
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 # The different map names can be found on considition.com/rules
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 
 game_layer = GameLayer(api_key)
-useTestStrategy = True
+usePrebuiltStrategy = False
 
 
 def main():
+
     #game_layer.force_end_game()
     game_layer.new_game(map_name)
     print("Starting game: " + game_layer.game_state.game_id)
