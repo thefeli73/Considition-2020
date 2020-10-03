@@ -3,13 +3,14 @@ import time
 import sys
 from sys import exit
 from game_layer import GameLayer
+import traceback
 
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 # The different map names can be found on considition.com/rules
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 
 game_layer = GameLayer(api_key)
-useTestStrategy = False
+usePrebuiltStrategy = False
 
 
 def main():
@@ -23,8 +24,7 @@ def main():
         try:
             take_turn()
         except:
-            e = sys.exc_info()[0]
-            print(e)
+            print(traceback.format_exc())
             game_layer.end_game()
             exit()
         time_diff = time.time() - start_time
@@ -40,7 +40,7 @@ def take_turn():
     # TODO Implement your artificial intelligence here.
     # TODO Take one action per turn until the game ends.
     # TODO The following is a short example of how to use the StarterKit
-    if not useTestStrategy:
+    if not usePrebuiltStrategy:
         state = game_layer.game_state
         print("testrunda")
         # messages and errors for console log
@@ -53,7 +53,7 @@ def take_turn():
     # pre-made test strategy
     # which came with
     # starter kit
-    if useTestStrategy:
+    if usePrebuiltStrategy:
         state = game_layer.game_state
         if len(state.residences) < 1:
             for i in range(len(state.map)):
