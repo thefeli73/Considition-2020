@@ -9,7 +9,7 @@ api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 
 game_layer = GameLayer(api_key)
-useTestStrategy = False
+useTestStrategy = True
 
 
 def main():
@@ -34,7 +34,28 @@ def main():
     print("Done with game: " + game_layer.game_state.game_id)
     print("Final score was: " + str(game_layer.get_score()["finalScore"]))
 
+def linus_take_turn():
+    mylist = []
+    state = game_layer.game_state
+    for i in range(len(state.map)-1):
+        for j in range(len(state.map)-1):
+            if state.map[i][j] == 0:
+                mylist.append((i,j))
 
+    #print(mylist)
+
+    if (game_layer.game_state.turn == 0):
+        game_layer.place_foundation(mylist[0], game_layer.game_state.available_residence_buildings[0].building_name)
+    the_only_residence = state.residences[0]
+    if the_only_residence.build_progress < 100:
+        game_layer.build(mylist[0])
+    else:
+    # messages and errors for console log
+        game_layer.wait()
+    for message in game_layer.game_state.messages:
+        print(message)
+    for error in game_layer.game_state.errors:
+        print("Error: " + error)
 
 def take_turn():
     # TODO Implement your artificial intelligence here.
@@ -89,6 +110,10 @@ def take_turn():
             print(message)
         for error in game_layer.game_state.errors:
             print("Error: " + error)
+
+def available_ground():
+
+
 
 
 if __name__ == "__main__":
