@@ -1,5 +1,6 @@
 # import api
 import time
+import sys
 from sys import exit
 from game_layer import GameLayer
 
@@ -19,9 +20,15 @@ def main():
     # exit game after timeout
     start_time = time.time()
     while game_layer.game_state.turn < game_layer.game_state.max_turns:
-        take_turn()
+        try:
+            take_turn()
+        except:
+            e = sys.exc_info()[0]
+            print(e)
+            game_layer.end_game()
+            exit()
         time_diff = time.time() - start_time
-        if time_diff > 5:
+        if time_diff > 40:
             game_layer.end_game()
             exit()
     print("Done with game: " + game_layer.game_state.game_id)
