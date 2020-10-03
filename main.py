@@ -5,6 +5,8 @@ from sys import exit
 from game_layer import GameLayer
 import traceback
 
+timeUntilRunEnds = 30
+
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 # The different map names can be found on considition.com/rules
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
@@ -15,6 +17,7 @@ usePrebuiltStrategy = False
 
 
 def main():
+
     #game_layer.force_end_game()
     game_layer.new_game(map_name)
     print("Starting game: " + game_layer.game_state.game_id)
@@ -23,19 +26,55 @@ def main():
     start_time = time.time()
     while game_layer.game_state.turn < game_layer.game_state.max_turns:
         try:
-            take_turn()
+            linus_take_turn()
         except:
             print(traceback.format_exc())
             game_layer.end_game()
             exit()
         time_diff = time.time() - start_time
-        if time_diff > 40:
+        if time_diff > timeUntilRunEnds:
             game_layer.end_game()
             exit()
     print("Done with game: " + game_layer.game_state.game_id)
     print("Final score was: " + str(game_layer.get_score()["finalScore"]))
 
+def linus_take_turn():
+    freeSpace = []
 
+    state = game_layer.game_state
+    for i in range(len(state.map)-1):
+        for j in range(len(state.map)-1):
+            if state.map[i][j] == 0:
+                freeSpace.append((i,j))
+
+    #print(mylist)
+
+    if (game_layer.game_state.turn == 0):
+        game_layer.place_foundation(freeSpace[2], game_layer.game_state.available_residence_buildings[0].building_name)
+    the_first_residence = state.residences[0]
+    if the_first_residence.build_progress < 100:
+        game_layer.build(freeSpace[2])
+    if len(state.residences)==1:
+        game_layer.place_foundation(freeSpace[3], game_layer.game_state.available_residence_buildings[4].building_name)
+    the_second_residence = state.residences[1]
+    if the_second_residence.build_progress < 100:
+        game_layer.build(freeSpace[3])
+    elif the_first_residence.health < 70:
+        game_layer.maintenance(freeSpace[2])
+    elif the_second_residence.health < 70:
+        game_layer.maintenance(freeSpace[3])
+    elif (the_second_residence.health > 70) and not len(state.utilities) > 0:
+        game_layer.place_foundation(freeSpace[4], game_layer.game_state.available_utility_buildings[2].building_name)
+    elif (state.utilities[0].build_progress < 100):
+        game_layer.build(freeSpace[4])
+
+    else:
+    # messages and errors for console log
+        game_layer.wait()
+    for message in game_layer.game_state.messages:
+        print(message)
+    for error in game_layer.game_state.errors:
+        print("Error: " + error)
 
 def take_turn():
     if not usePrebuiltStrategy:
