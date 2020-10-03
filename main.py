@@ -12,11 +12,10 @@ map_name = "training1"  # TODO: You map choice here. If left empty, the map "tra
 game_layer = GameLayer(api_key)
 state = game_layer.game_state
 usePrebuiltStrategy = False
-timeUntilRunEnds = 30
+timeUntilRunEnds = 70
 
 
 def main():
-
     #game_layer.force_end_game()
     game_layer.new_game(map_name)
     print("Starting game: " + game_layer.game_state.game_id)
