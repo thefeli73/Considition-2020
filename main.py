@@ -28,7 +28,6 @@ def main():
     # exit game after timeout
     start_time = time.time()
     chartMap()
-    optimizeAvailableTiles()
     while game_layer.game_state.turn < game_layer.game_state.max_turns:
         try:
             take_turn()
@@ -90,7 +89,6 @@ def take_turn():
             pass
         else:
             develop_society()
-
         # messages and errors for console log
         for message in game_layer.game_state.messages:
             print(message)
@@ -141,14 +139,14 @@ def take_turn():
 
 def chartMap():
     state = game_layer.game_state
-    availableTiles = []
     for x in range(len(state.map) - 1):
         for y in range(len(state.map) - 1):
             if state.map[x][y] == 0:
                 availableTiles.append((x, y))
-
+    optimizeAvailableTiles()
 
 def optimizeAvailableTiles():
+    #hitta #utilities antal bästa platser i mitten av smeten och sätt de först, sätt allt runt dem i ordning så närmast är längst fram i listan
     pass
 
 
