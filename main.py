@@ -13,9 +13,11 @@ map_name = "training1"  # TODO: You map choice here. If left empty, the map "tra
 game_layer = GameLayer(api_key)
 state = game_layer.game_state
 usePrebuiltStrategy = False
-timeUntilRunEnds = 70
+timeUntilRunEnds = 50
+rounds_between_energy = 6
 utilities = 3
 
+EMA_temp = None
 building_under_construction = None
 availableTiles = []
 
@@ -28,10 +30,15 @@ def main():
     # exit game after timeout
     start_time = time.time()
     chartMap()
+    global EMA_temp
     while game_layer.game_state.turn < game_layer.game_state.max_turns:
         try:
-            take_turn()
-        except Exception:
+            if EMA_temp is None:
+                EMA_temp = game_layer.game_state.current_temp
+            ema_k_value = (2/(rounds_between_energy+1))
+            EMA_temp = game_layer.game_state.current_temp * ema_k_value + EMA_temp*(1-ema_k_value)
+            linus_take_turn()
+        except:
             print(traceback.format_exc())
             game_layer.end_game()
             exit()
@@ -46,32 +53,83 @@ def linus_take_turn():
     freeSpace = []
 
     state = game_layer.game_state
-    for i in range(len(state.map)-1):
-        for j in range(len(state.map)-1):
-            if state.map[i][j] == 0:
-                freeSpace.append((i,j))
+    for x in range(len(state.map)-1):
+        for y in range(len(state.map)-1):
+            if state.map[x][y] == 0:
+                freeSpace.append((x,y))
 
-    #print(mylist)
+
+    #if (i == 0 or i%5 == 0)and i<26:
+    #    game_layer.place_foundation(freeSpace[(i//5)+2], game_layer.game_state.available_residence_buildings[i//5].building_name)
 
     if (game_layer.game_state.turn == 0):
         game_layer.place_foundation(freeSpace[2], game_layer.game_state.available_residence_buildings[0].building_name)
     the_first_residence = state.residences[0]
     if the_first_residence.build_progress < 100:
         game_layer.build(freeSpace[2])
-    if len(state.residences)==1:
-        game_layer.place_foundation(freeSpace[3], game_layer.game_state.available_residence_buildings[4].building_name)
+    if len(state.residences) == 1:
+        game_layer.place_foundation(freeSpace[3], game_layer.game_state.available_residence_buildings[5].building_name)
     the_second_residence = state.residences[1]
     if the_second_residence.build_progress < 100:
         game_layer.build(freeSpace[3])
+    if len(state.residences) == 2:
+        game_layer.place_foundation(freeSpace[5], game_layer.game_state.available_residence_buildings[1].building_name)
+    the_third_residence = state.residences[2]
+    if the_third_residence.build_progress < 100:
+        game_layer.build(freeSpace[5])
+    if len(state.residences) == 3:
+        game_layer.place_foundation((4,4), game_layer.game_state.available_residence_buildings[4].building_name)
+    the_fourth_residence = state.residences[3]
+    if the_fourth_residence.build_progress < 100:
+        game_layer.build((4,4))
+
+    if len(state.residences) == 4:
+        game_layer.place_foundation((4,5), game_layer.game_state.available_residence_buildings[3].building_name)
+    the_fifth_residence = state.residences[4]
+    if the_fifth_residence.build_progress < 100:
+        game_layer.build((4,5))
+
+    if len(state.residences) == 5:
+        game_layer.place_foundation((4,6), game_layer.game_state.available_residence_buildings[4].building_name)
+    the_sixth_residence = state.residences[5]
+    if (the_sixth_residence.build_progress < 100) and game_layer.game_state.funds > 4000:
+        game_layer.build((4,6))
+
     elif the_first_residence.health < 70:
         game_layer.maintenance(freeSpace[2])
     elif the_second_residence.health < 70:
         game_layer.maintenance(freeSpace[3])
+    elif the_third_residence.health < 70:
+        game_layer.maintenance(freeSpace[5])
+    elif the_fourth_residence.health < 70:
+        game_layer.maintenance((4,4))
+    elif the_fifth_residence.health < 70:
+        game_layer.maintenance((4,5))
+    elif the_sixth_residence.health < 70:
+        game_layer.maintenance((4,6))
     elif (the_second_residence.health > 70) and not len(state.utilities) > 0:
         game_layer.place_foundation(freeSpace[4], game_layer.game_state.available_utility_buildings[2].building_name)
     elif (state.utilities[0].build_progress < 100):
         game_layer.build(freeSpace[4])
 
+
+    #elif (game_layer.game_state.turn > 35) and not len(state.utilities) > 1:
+    #    game_layer.place_foundation((4,6), game_layer.game_state.available_utility_buildings[1].building_name)
+    #elif (state.utilities[1].build_progress < 100):
+    #    game_layer.build((4,6))
+
+    elif (game_layer.game_state.turn % rounds_between_energy == 0):
+        adjustEnergy(the_first_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 1):
+        adjustEnergy(the_second_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 2):
+        adjustEnergy(the_third_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 3):
+        adjustEnergy(the_fourth_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 4):
+        adjustEnergy(the_fifth_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 5):
+        adjustEnergy(the_sixth_residence)
     else:
     # messages and errors for console log
         game_layer.wait()
@@ -145,24 +203,32 @@ def chartMap():
                 availableTiles.append((x, y))
     optimizeAvailableTiles()
 
+def adjustEnergy(currentBuilding):
+    global rounds_between_energy
+    global EMA_temp
+    blueprint = game_layer.get_residence_blueprint(currentBuilding.building_name)
+    outDoorTemp = game_layer.game_state.current_temp * 2 - EMA_temp
+
+    temp_acceleration = (2*(21 - currentBuilding.temperature)/(rounds_between_energy))
+
+    effectiveEnergyIn = ((temp_acceleration - 0.04 * currentBuilding.current_pop + (currentBuilding.temperature - outDoorTemp) * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
+
+    if effectiveEnergyIn > blueprint.base_energy_need:
+        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), effectiveEnergyIn)
+    elif effectiveEnergyIn < blueprint.base_energy_need:
+        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), blueprint.base_energy_need + 0.01)
+    else:
+        print("you did it!")
+        game_layer.wait()
+
+
+
+
+
 def optimizeAvailableTiles():
     #hitta #utilities antal bästa platser i mitten av smeten och sätt de först, sätt allt runt dem i ordning så närmast är längst fram i listan
     pass
 
-
-def adjustEnergy(current_building, target_temp):
-    current_blueprint = game_layer.get_residence_blueprint(current_building.building_name)
-
-    base_energy_need = current_blueprint.base_energy_need
-    indoor_temp = current_building.temperature
-    degrees_per_pop = 0.04
-    current_pop = current_building.current_pop
-    outdoor_temp = game_layer.game_state.current_temp
-    emissivity = current_blueprint.emissivity
-    degrees_per_excess_mwh = 0.75
-
-    effective_energy_in = -1 * (base_energy_need + (indoor_temp + degrees_per_pop * current_pop - (indoor_temp - outdoor_temp) * emissivity - target_temp)/degrees_per_excess_mwh)
-    game_layer.adjust_energy_level((current_building.X, current_building.Y), effective_energy_in)
 
 def something_needs_attention():
     print("Checking for emergencies")
