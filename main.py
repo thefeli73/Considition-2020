@@ -3,6 +3,7 @@ import time
 import sys
 from sys import exit
 from game_layer import GameLayer
+import game_state
 import traceback
 
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
@@ -13,6 +14,10 @@ game_layer = GameLayer(api_key)
 state = game_layer.game_state
 usePrebuiltStrategy = False
 timeUntilRunEnds = 70
+utilities = 3
+
+building_under_construction = False
+availableTiles = []
 
 
 def main():
