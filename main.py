@@ -38,36 +38,88 @@ def main():
     print("Done with game: " + game_layer.game_state.game_id)
     print("Final score was: " + str(game_layer.get_score()["finalScore"]))
 
-def linus_take_turn():
+def linus_take_turn(i):
     freeSpace = []
 
     state = game_layer.game_state
-    for i in range(len(state.map)-1):
-        for j in range(len(state.map)-1):
-            if state.map[i][j] == 0:
-                freeSpace.append((i,j))
+    for x in range(len(state.map)-1):
+        for y in range(len(state.map)-1):
+            if state.map[x][y] == 0:
+                freeSpace.append((x,y))
 
     #print(mylist)
+
+    #if (i == 0 or i%5 == 0)and i<26:
+    #    game_layer.place_foundation(freeSpace[(i//5)+2], game_layer.game_state.available_residence_buildings[i//5].building_name)
 
     if (game_layer.game_state.turn == 0):
         game_layer.place_foundation(freeSpace[2], game_layer.game_state.available_residence_buildings[0].building_name)
     the_first_residence = state.residences[0]
     if the_first_residence.build_progress < 100:
         game_layer.build(freeSpace[2])
-    if len(state.residences)==1:
-        game_layer.place_foundation(freeSpace[3], game_layer.game_state.available_residence_buildings[4].building_name)
+    if len(state.residences) == 1:
+        game_layer.place_foundation(freeSpace[3], game_layer.game_state.available_residence_buildings[5].building_name)
     the_second_residence = state.residences[1]
     if the_second_residence.build_progress < 100:
         game_layer.build(freeSpace[3])
+    if len(state.residences) == 2:
+        game_layer.place_foundation(freeSpace[5], game_layer.game_state.available_residence_buildings[0].building_name)
+    the_third_residence = state.residences[2]
+    if the_third_residence.build_progress < 100:
+        game_layer.build(freeSpace[5])
+    if len(state.residences) == 3:
+        game_layer.place_foundation((4,4), game_layer.game_state.available_residence_buildings[4].building_name)
+    the_fourth_residence = state.residences[3]
+    if the_fourth_residence.build_progress < 100:
+        game_layer.build((4,4))
+
+    if len(state.residences) == 4:
+        game_layer.place_foundation((4,5), game_layer.game_state.available_residence_buildings[4].building_name)
+    the_fifth_residence = state.residences[4]
+    if the_fifth_residence.build_progress < 100:
+        game_layer.build((4,5))
+
+    if len(state.residences) == 5:
+        game_layer.place_foundation((4,6), game_layer.game_state.available_residence_buildings[4].building_name)
+    the_sixth_residence = state.residences[5]
+    if (the_sixth_residence.build_progress < 100) and game_layer.game_state.funds > 4000:
+        game_layer.build((4,6))
+
     elif the_first_residence.health < 70:
         game_layer.maintenance(freeSpace[2])
     elif the_second_residence.health < 70:
         game_layer.maintenance(freeSpace[3])
+    elif the_third_residence.health < 70:
+        game_layer.maintenance(freeSpace[5])
+    elif the_fourth_residence.health < 70:
+        game_layer.maintenance((4,4))
+    elif the_fifth_residence.health < 70:
+        game_layer.maintenance((4,5))
+    elif the_sixth_residence.health < 70:
+        game_layer.maintenance((4,6))
     elif (the_second_residence.health > 70) and not len(state.utilities) > 0:
         game_layer.place_foundation(freeSpace[4], game_layer.game_state.available_utility_buildings[2].building_name)
     elif (state.utilities[0].build_progress < 100):
         game_layer.build(freeSpace[4])
 
+
+    #elif (game_layer.game_state.turn > 35) and not len(state.utilities) > 1:
+    #    game_layer.place_foundation((4,6), game_layer.game_state.available_utility_buildings[1].building_name)
+    #elif (state.utilities[1].build_progress < 100):
+    #    game_layer.build((4,6))
+
+    elif (game_layer.game_state.turn % 10 == 0):
+        adjustEnergy2(the_first_residence, 21)
+    elif (game_layer.game_state.turn % 5 == 0):
+        adjustEnergy2(the_second_residence, 21)
+    elif (game_layer.game_state.turn % 5 == 1):
+        adjustEnergy2(the_third_residence, 21)
+    elif (game_layer.game_state.turn % 5 == 2):
+        adjustEnergy2(the_fourth_residence, 21)
+    elif (game_layer.game_state.turn % 5 == 3):
+        adjustEnergy2(the_fifth_residence, 21)
+    elif (game_layer.game_state.turn % 5 == 4):
+        adjustEnergy2(the_sixth_residence, 21)
     else:
     # messages and errors for console log
         game_layer.wait()
