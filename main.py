@@ -14,7 +14,7 @@ game_layer = GameLayer(api_key)
 state = game_layer.game_state
 usePrebuiltStrategy = False
 timeUntilRunEnds = 50
-rounds_between_energy = 6
+rounds_between_energy = 5
 utilities = 3
 
 EMA_temp = None
@@ -37,7 +37,7 @@ def main():
                 EMA_temp = game_layer.game_state.current_temp
             ema_k_value = (2/(rounds_between_energy+1))
             EMA_temp = game_layer.game_state.current_temp * ema_k_value + EMA_temp*(1-ema_k_value)
-            linus_take_turn()
+            take_turn()
         except:
             print(traceback.format_exc())
             game_layer.end_game()
@@ -233,7 +233,29 @@ def optimizeAvailableTiles():
 def something_needs_attention():
     print("Checking for emergencies")
     global building_under_construction
-    if building_under_construction is not None:
+    global edit_temp
+    global maintain
+    state = game_layer.game_state
+
+    #check if temp needs adjusting
+    edit_temp = (False, 0)
+    for i in range(len(state.residences)):
+        if (state.turn % rounds_between_energy == i) and not state.residences[i].build_progress < 100:
+            edit_temp = (True, i)
+
+    #check if need for maintainance
+    maintain = (False, 0)
+    for i in range(len(state.residences)):
+        if state.residences[i].health < 41+rounds_between_energy*game_layer.get_residence_blueprint(state.residences[i].building_name).decay_rate:
+            maintain = (True, i)
+
+    if maintain[0]:
+        game_layer.maintenance((state.residences[maintain[1]].X, state.residences[maintain[1]].Y))
+        return True
+    elif edit_temp[0]: #adjust temp of building
+        adjustEnergy(state.residences[edit_temp[1]])
+        return True
+    elif building_under_construction is not None: #finish construction
         print(building_under_construction)
         if game_layer.game_state.residences[building_under_construction[2]].build_progress < 100: # TODO: inte ba kolla residence utan också utility
             game_layer.build((building_under_construction[0], building_under_construction[1]))
@@ -241,17 +263,19 @@ def something_needs_attention():
         else:
             building_under_construction = None
             return False
-    elif False:
-        return True
     else:
         return False
 
 def develop_society():
-    #state = game_layer.game_state
-    if len(game_layer.game_state.residences) < 6:
-        build("ModernApartments")
-    elif False:
-        pass
+    state = game_layer.game_state
+    if len(game_layer.game_state.residences) < 4:
+        build("Apartments")
+    elif len(game_layer.game_state.utilities) <1:
+        game_layer.place_foundation((3,6), "WindTurbine")
+    elif (state.utilities[0].build_progress < 100):
+        game_layer.build((3,6))
+    elif state.funds > 25000 and len(game_layer.game_state.residences) < 7:
+        build("HighRise")
     else:
         game_layer.wait()
 
@@ -259,6 +283,7 @@ def build(structure):
     print("Building " + structure)
     state = game_layer.game_state
     global building_under_construction
+    global rounds_between_energy
     for i in range(len(availableTiles)):
         if isinstance(availableTiles[i], tuple):
             game_layer.place_foundation(availableTiles[i], structure)
@@ -268,6 +293,7 @@ def build(structure):
                 if coords_to_check == availableTiles[i]:
                     availableTiles[i] = building
                     building_under_construction = (building.X, building.Y, j)
+                    rounds_between_energy = len(state.residences)+5
                     return True
             for j in range(len(state.utilities)):
                 building = state.utilities[j]
@@ -275,6 +301,7 @@ def build(structure):
                 if coords_to_check == availableTiles[i]:
                     availableTiles[i] = building
                     building_under_construction = (building.X, building.Y, j)
+                    rounds_between_energy = len(state.residences)+5
                     return True
 
 
