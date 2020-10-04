@@ -16,7 +16,7 @@ usePrebuiltStrategy = False
 timeUntilRunEnds = 70
 utilities = 3
 
-building_under_construction = False
+building_under_construction = None
 availableTiles = []
 
 
@@ -165,12 +165,25 @@ def adjustEnergy(current_building, target_temp):
     game_layer.adjust_energy_level((current_building.X, current_building.Y), effective_energy_in)
 
 def something_needs_attention():
-    pass
+    print("Checking for emergencies")
+    global building_under_construction
+    if building_under_construction is not None:
+        print(building_under_construction)
+        if game_layer.game_state.residences[building_under_construction[2]].build_progress < 100: # TODO: inte ba kolla residence utan också utility
+            game_layer.build((building_under_construction[0], building_under_construction[1]))
+            return True
+        else:
+            building_under_construction = None
+            return False
+    elif False:
+        return True
+    else:
+        return False
 
 def develop_society():
     #state = game_layer.game_state
-    if len(game_layer.game_state.residences) < 1:
-        build("Apartments")
+    if len(game_layer.game_state.residences) < 6:
+        build("ModernApartments")
     elif False:
         pass
     else:
@@ -188,14 +201,14 @@ def build(structure):
                 coords_to_check = (building.X, building.Y)
                 if coords_to_check == availableTiles[i]:
                     availableTiles[i] = building
-                    building_under_construction = (building.X,building.Y)
+                    building_under_construction = (building.X, building.Y, j)
                     return True
             for j in range(len(state.utilities)):
                 building = state.utilities[j]
                 coords_to_check = (building.X, building.Y)
                 if coords_to_check == availableTiles[i]:
                     availableTiles[i] = building
-                    building_under_construction = (building.X,building.Y)
+                    building_under_construction = (building.X, building.Y, j)
                     return True
 
 
