@@ -14,8 +14,9 @@ game_layer = GameLayer(api_key)
 state = game_layer.game_state
 usePrebuiltStrategy = False
 timeUntilRunEnds = 50
-rounds_between_energy = 7
+rounds_between_energy = 6
 
+EMA_temp = None
 
 
 def main():
@@ -26,8 +27,13 @@ def main():
     game_layer.start_game()
     # exit game after timeout
     start_time = time.time()
+    global EMA_temp
     while game_layer.game_state.turn < game_layer.game_state.max_turns:
         try:
+            if EMA_temp is None:
+                EMA_temp = game_layer.game_state.current_temp
+            ema_k_value = (2/(rounds_between_energy+1))
+            EMA_temp = game_layer.game_state.current_temp * ema_k_value + EMA_temp*(1-ema_k_value)
             linus_take_turn()
         except:
             print(traceback.format_exc())
@@ -49,7 +55,6 @@ def linus_take_turn():
             if state.map[x][y] == 0:
                 freeSpace.append((x,y))
 
-    #print(mylist)
 
     #if (i == 0 or i%5 == 0)and i<26:
     #    game_layer.place_foundation(freeSpace[(i//5)+2], game_layer.game_state.available_residence_buildings[i//5].building_name)
@@ -70,7 +75,7 @@ def linus_take_turn():
     if the_third_residence.build_progress < 100:
         game_layer.build(freeSpace[5])
     if len(state.residences) == 3:
-        game_layer.place_foundation((4,4), game_layer.game_state.available_residence_buildings[5].building_name)
+        game_layer.place_foundation((4,4), game_layer.game_state.available_residence_buildings[4].building_name)
     the_fourth_residence = state.residences[3]
     if the_fourth_residence.build_progress < 100:
         game_layer.build((4,4))
@@ -82,7 +87,7 @@ def linus_take_turn():
         game_layer.build((4,5))
 
     if len(state.residences) == 5:
-        game_layer.place_foundation((4,6), game_layer.game_state.available_residence_buildings[5].building_name)
+        game_layer.place_foundation((4,6), game_layer.game_state.available_residence_buildings[4].building_name)
     the_sixth_residence = state.residences[5]
     if (the_sixth_residence.build_progress < 100) and game_layer.game_state.funds > 4000:
         game_layer.build((4,6))
@@ -192,11 +197,12 @@ def chartMap():
                 availableTiles.append((x, y))
 
 def adjustEnergy(currentBuilding):
-    global rounds_between_engery
+    global rounds_between_energy
+    global EMA_temp
     blueprint = game_layer.get_residence_blueprint(currentBuilding.building_name)
-    outDoorTemp = game_layer.game_state.current_temp
+    outDoorTemp = game_layer.game_state.current_temp * 2 - EMA_temp
 
-    temp_acceleration = (2*(21 - currentBuilding.temperature)/(rounds_between_energy**2))
+    temp_acceleration = (2*(21 - currentBuilding.temperature)/(rounds_between_energy))
 
     effectiveEnergyIn = ((temp_acceleration - 0.04 * currentBuilding.current_pop + (currentBuilding.temperature - outDoorTemp) * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
 
