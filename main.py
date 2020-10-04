@@ -14,6 +14,8 @@ game_layer = GameLayer(api_key)
 state = game_layer.game_state
 usePrebuiltStrategy = False
 timeUntilRunEnds = 50
+rounds_between_energy = 7
+
 
 
 def main():
@@ -108,18 +110,18 @@ def linus_take_turn():
     #elif (state.utilities[1].build_progress < 100):
     #    game_layer.build((4,6))
 
-    elif (game_layer.game_state.turn % 10 == 0):
-        adjustEnergy(the_first_residence, 21)
-    elif (game_layer.game_state.turn % 5 == 0):
-        adjustEnergy(the_second_residence, 21)
-    elif (game_layer.game_state.turn % 5 == 1):
-        adjustEnergy(the_third_residence, 21)
-    elif (game_layer.game_state.turn % 5 == 2):
-        adjustEnergy(the_fourth_residence, 21)
-    elif (game_layer.game_state.turn % 5 == 3):
-        adjustEnergy(the_fifth_residence, 21)
-    elif (game_layer.game_state.turn % 5 == 4):
-        adjustEnergy(the_sixth_residence, 21)
+    elif (game_layer.game_state.turn % rounds_between_energy == 0):
+        adjustEnergy(the_first_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 1):
+        adjustEnergy(the_second_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 2):
+        adjustEnergy(the_third_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 3):
+        adjustEnergy(the_fourth_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 4):
+        adjustEnergy(the_fifth_residence)
+    elif (game_layer.game_state.turn % rounds_between_energy == 5):
+        adjustEnergy(the_sixth_residence)
     else:
     # messages and errors for console log
         game_layer.wait()
@@ -189,12 +191,14 @@ def chartMap():
             if state.map[x][y] == 0:
                 availableTiles.append((x, y))
 
-def adjustEnergy(currentBuilding, newTemp):
+def adjustEnergy(currentBuilding):
+    global rounds_between_engery
     blueprint = game_layer.get_residence_blueprint(currentBuilding.building_name)
     outDoorTemp = game_layer.game_state.current_temp
 
-    effectiveEnergyIn = ((newTemp - currentBuilding.temperature - 0.04 * currentBuilding.current_pop + (currentBuilding.temperature - outDoorTemp)* 2 * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
-    effectiveEnergyIn /= 1.7
+    temp_acceleration = (2*(21 - currentBuilding.temperature)/(rounds_between_energy**2))
+
+    effectiveEnergyIn = ((temp_acceleration - 0.04 * currentBuilding.current_pop + (currentBuilding.temperature - outDoorTemp) * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
 
     if effectiveEnergyIn > blueprint.base_energy_need:
         game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), effectiveEnergyIn)
