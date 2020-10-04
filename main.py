@@ -168,7 +168,36 @@ def something_needs_attention():
     pass
 
 def develop_society():
-    pass
+    #state = game_layer.game_state
+    if len(game_layer.game_state.residences) < 1:
+        build("Apartments")
+    elif False:
+        pass
+    else:
+        game_layer.wait()
+
+def build(structure):
+    print("Building " + structure)
+    state = game_layer.game_state
+    global building_under_construction
+    for i in range(len(availableTiles)):
+        if isinstance(availableTiles[i], tuple):
+            game_layer.place_foundation(availableTiles[i], structure)
+            for j in range(len(state.residences)):
+                building = state.residences[j]
+                coords_to_check = (building.X, building.Y)
+                if coords_to_check == availableTiles[i]:
+                    availableTiles[i] = building
+                    building_under_construction = (building.X,building.Y)
+                    return True
+            for j in range(len(state.utilities)):
+                building = state.utilities[j]
+                coords_to_check = (building.X, building.Y)
+                if coords_to_check == availableTiles[i]:
+                    availableTiles[i] = building
+                    building_under_construction = (building.X,building.Y)
+                    return True
+
 
 if __name__ == "__main__":
     main()
