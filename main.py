@@ -67,11 +67,13 @@ def linus_take_turn():
     the_first_residence = state.residences[0]
     if the_first_residence.build_progress < 100:
         game_layer.build(freeSpace[2])
+
     if len(state.residences) == 1:
         game_layer.place_foundation(freeSpace[3], game_layer.game_state.available_residence_buildings[5].building_name)
     the_second_residence = state.residences[1]
     if the_second_residence.build_progress < 100:
         game_layer.build(freeSpace[3])
+
     if len(state.residences) == 2:
         game_layer.place_foundation(freeSpace[5], game_layer.game_state.available_residence_buildings[1].building_name)
     the_third_residence = state.residences[2]
@@ -95,7 +97,18 @@ def linus_take_turn():
     if (the_sixth_residence.build_progress < 100) and game_layer.game_state.funds > 4000:
         game_layer.build((4,6))
 
-    elif the_first_residence.health < 70:
+
+    for i in range(len(state.residences)):
+        if state.residences[i].health < 45:
+            game_layer.maintenance(state.residences[i].X, state.residences[i].Y)
+
+    for i in range(len(state.residences)):
+        if game_layer.game_state.turn % ROUNDVARIABLE == i:
+            adjustEnergy(the_first_residence)
+
+
+
+    elif the_first_residence.health < :
         game_layer.maintenance(freeSpace[2])
     elif the_second_residence.health < 70:
         game_layer.maintenance(freeSpace[3])
