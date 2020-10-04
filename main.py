@@ -270,13 +270,11 @@ def something_needs_attention():
 
 def develop_society():
     state = game_layer.game_state
-    if len(game_layer.game_state.residences) < 4:
+    if len(state.residences) < 5:
         build("Apartments")
-    elif len(game_layer.game_state.utilities) <1:
-        game_layer.place_foundation((3,6), "WindTurbine")
-    elif (state.utilities[0].build_progress < 100):
-        game_layer.build((3,6))
-    elif state.funds > 25000 and len(game_layer.game_state.residences) < 7:
+    elif len(state.utilities) < 1:
+        build("WindTurbine")
+    elif state.funds > 25000 and len(game_layer.game_state.residences) < 11:
         build("HighRise")
     else:
         game_layer.wait()
