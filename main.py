@@ -5,7 +5,6 @@ from sys import exit
 from game_layer import GameLayer
 import traceback
 
-timeUntilRunEnds = 30
 
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 # The different map names can be found on considition.com/rules
@@ -14,6 +13,7 @@ map_name = "training1"  # TODO: You map choice here. If left empty, the map "tra
 game_layer = GameLayer(api_key)
 state = game_layer.game_state
 usePrebuiltStrategy = False
+timeUntilRunEnds = 50
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
     print("Done with game: " + game_layer.game_state.game_id)
     print("Final score was: " + str(game_layer.get_score()["finalScore"]))
 
-def linus_take_turn(i):
+def linus_take_turn():
     freeSpace = []
 
     state = game_layer.game_state
@@ -63,24 +63,24 @@ def linus_take_turn(i):
     if the_second_residence.build_progress < 100:
         game_layer.build(freeSpace[3])
     if len(state.residences) == 2:
-        game_layer.place_foundation(freeSpace[5], game_layer.game_state.available_residence_buildings[0].building_name)
+        game_layer.place_foundation(freeSpace[5], game_layer.game_state.available_residence_buildings[1].building_name)
     the_third_residence = state.residences[2]
     if the_third_residence.build_progress < 100:
         game_layer.build(freeSpace[5])
     if len(state.residences) == 3:
-        game_layer.place_foundation((4,4), game_layer.game_state.available_residence_buildings[4].building_name)
+        game_layer.place_foundation((4,4), game_layer.game_state.available_residence_buildings[5].building_name)
     the_fourth_residence = state.residences[3]
     if the_fourth_residence.build_progress < 100:
         game_layer.build((4,4))
 
     if len(state.residences) == 4:
-        game_layer.place_foundation((4,5), game_layer.game_state.available_residence_buildings[4].building_name)
+        game_layer.place_foundation((4,5), game_layer.game_state.available_residence_buildings[3].building_name)
     the_fifth_residence = state.residences[4]
     if the_fifth_residence.build_progress < 100:
         game_layer.build((4,5))
 
     if len(state.residences) == 5:
-        game_layer.place_foundation((4,6), game_layer.game_state.available_residence_buildings[4].building_name)
+        game_layer.place_foundation((4,6), game_layer.game_state.available_residence_buildings[5].building_name)
     the_sixth_residence = state.residences[5]
     if (the_sixth_residence.build_progress < 100) and game_layer.game_state.funds > 4000:
         game_layer.build((4,6))
@@ -109,17 +109,17 @@ def linus_take_turn(i):
     #    game_layer.build((4,6))
 
     elif (game_layer.game_state.turn % 10 == 0):
-        adjustEnergy2(the_first_residence, 21)
+        adjustEnergy(the_first_residence, 21)
     elif (game_layer.game_state.turn % 5 == 0):
-        adjustEnergy2(the_second_residence, 21)
+        adjustEnergy(the_second_residence, 21)
     elif (game_layer.game_state.turn % 5 == 1):
-        adjustEnergy2(the_third_residence, 21)
+        adjustEnergy(the_third_residence, 21)
     elif (game_layer.game_state.turn % 5 == 2):
-        adjustEnergy2(the_fourth_residence, 21)
+        adjustEnergy(the_fourth_residence, 21)
     elif (game_layer.game_state.turn % 5 == 3):
-        adjustEnergy2(the_fifth_residence, 21)
+        adjustEnergy(the_fifth_residence, 21)
     elif (game_layer.game_state.turn % 5 == 4):
-        adjustEnergy2(the_sixth_residence, 21)
+        adjustEnergy(the_sixth_residence, 21)
     else:
     # messages and errors for console log
         game_layer.wait()
