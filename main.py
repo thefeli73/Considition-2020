@@ -189,5 +189,24 @@ def chartMap():
             if state.map[x][y] == 0:
                 availableTiles.append((x, y))
 
+def adjustEnergy(currentBuilding, newTemp):
+    blueprint = game_layer.get_residence_blueprint(currentBuilding.building_name)
+    outDoorTemp = game_layer.game_state.current_temp
+
+    effectiveEnergyIn = ((newTemp - currentBuilding.temperature - 0.04 * currentBuilding.current_pop + (currentBuilding.temperature - outDoorTemp)* 2 * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
+    effectiveEnergyIn /= 1.7
+
+    if effectiveEnergyIn > blueprint.base_energy_need:
+        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), effectiveEnergyIn)
+    elif effectiveEnergyIn < blueprint.base_energy_need:
+        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), blueprint.base_energy_need + 0.01)
+    else:
+        print("you did it!")
+        game_layer.wait()
+
+
+
+
+
 if __name__ == "__main__":
     main()
