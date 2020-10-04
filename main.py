@@ -287,22 +287,27 @@ def build(structure):
     for i in range(len(availableTiles)):
         if isinstance(availableTiles[i], tuple):
             game_layer.place_foundation(availableTiles[i], structure)
-            for j in range(len(state.residences)):
-                building = state.residences[j]
-                coords_to_check = (building.X, building.Y)
-                if coords_to_check == availableTiles[i]:
-                    availableTiles[i] = building
-                    building_under_construction = (building.X, building.Y, j)
-                    rounds_between_energy = len(state.residences)+5
-                    return True
-            for j in range(len(state.utilities)):
-                building = state.utilities[j]
-                coords_to_check = (building.X, building.Y)
-                if coords_to_check == availableTiles[i]:
-                    availableTiles[i] = building
-                    building_under_construction = (building.X, building.Y, j)
-                    rounds_between_energy = len(state.residences)+5
-                    return True
+            for building in state.available_residence_buildings:
+                if structure in building.building_name:
+                    for j in range(len(state.residences)):
+                        building = state.residences[j]
+                        coords_to_check = (building.X, building.Y)
+                        if coords_to_check == availableTiles[i]:
+                            availableTiles[i] = building
+                            building_under_construction = (building.X, building.Y, j)
+                            rounds_between_energy = len(state.residences)+2
+                            return True
+            for building in state.available_utility_buildings:
+                if structure in building.building_name:
+                    for j in range(len(state.utilities)):
+                        building = state.utilities[j]
+                        coords_to_check = (building.X, building.Y)
+                        if coords_to_check == availableTiles[i]:
+                            availableTiles[i] = building
+                            building_under_construction = (building.X, building.Y, j)
+                            rounds_between_energy = len(state.residences)+2
+                            return True
+            return False
 
 
 if __name__ == "__main__":
