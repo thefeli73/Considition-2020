@@ -256,8 +256,10 @@ def something_needs_attention():
         adjustEnergy(state.residences[edit_temp[1]])
         return True
     elif building_under_construction is not None: #finish construction
-        print(building_under_construction)
-        if game_layer.game_state.residences[building_under_construction[2]].build_progress < 100: # TODO: inte ba kolla residence utan också utility
+        if (len(game_layer.game_state.residences) >= building_under_construction[2]) and (game_layer.game_state.residences[building_under_construction[2]].build_progress < 100):
+            game_layer.build((building_under_construction[0], building_under_construction[1]))
+            return True
+        elif (len(game_layer.game_state.utilities)-1 >= building_under_construction[2]) and (game_layer.game_state.utilities[building_under_construction[2]].build_progress < 100):
             game_layer.build((building_under_construction[0], building_under_construction[1]))
             return True
         else:
