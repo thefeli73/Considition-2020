@@ -160,9 +160,8 @@ def something_needs_attention():
         game_layer.maintenance((state.residences[maintain[1]].X, state.residences[maintain[1]].Y))
         return True
     elif edit_temp[0]:  # adjust temp of buildings
-        adjustEnergy(state.residences[edit_temp[1]])
-        return True
-    elif building_under_construction is not None: #finish construction
+        return adjust_energy(state.residences[edit_temp[1]])
+    elif building_under_construction is not None:  # finish construction
         if (len(state.residences)-1 >= building_under_construction[2]) and (state.residences[building_under_construction[2]].build_progress < 100):
             game_layer.build((building_under_construction[0], building_under_construction[1]))
             if not state.residences[building_under_construction[2]].build_progress < 100:
@@ -199,11 +198,12 @@ def adjust_energy(current_building):
 
     if effectiveEnergyIn > blueprint.base_energy_need:
         game_layer.adjust_energy_level((current_building.X, current_building.Y), effectiveEnergyIn)
+        return True
     elif effectiveEnergyIn < blueprint.base_energy_need:
         game_layer.adjust_energy_level((current_building.X, current_building.Y), blueprint.base_energy_need + 0.01)
+        return True
     else:
-        print("you did it!")
-        game_layer.wait()
+        return False
 
 
 def optimize_available_tiles():
