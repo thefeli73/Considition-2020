@@ -9,49 +9,51 @@ import traceback
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 # The different map names can be found on considition.com/rules
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
-
 game_layer = GameLayer(api_key)
-state = game_layer.game_state
-usePrebuiltStrategy = False
-timeUntilRunEnds = 50
-rounds_between_energy = 5
+#settings
+use_prebuilt_strategy = False
+time_until_run_ends = 70
 utilities = 3
-
-EMA_temp = None
-building_under_construction = None
-availableTiles = []
 
 
 def main():
-    #game_layer.force_end_game()
+    global EMA_temp, rounds_between_energy, building_under_construction, availableTiles, state
+    #global vars
+    rounds_between_energy = 5
+    EMA_temp = None
+    building_under_construction = None
+    availableTiles = []
+
     game_layer.new_game(map_name)
     print("Starting game: " + game_layer.game_state.game_id)
     game_layer.start_game()
-    # exit game after timeout
+    # start timeout timer
     start_time = time.time()
+    state = game_layer.game_state
     chartMap()
-    global EMA_temp
-    while game_layer.game_state.turn < game_layer.game_state.max_turns:
+    while state.turn < state.max_turns:
+        state = game_layer.game_state
         try:
             if EMA_temp is None:
-                EMA_temp = game_layer.game_state.current_temp
+                EMA_temp = state.current_temp
             ema_k_value = (2/(rounds_between_energy+1))
-            EMA_temp = game_layer.game_state.current_temp * ema_k_value + EMA_temp*(1-ema_k_value)
+            EMA_temp = state.current_temp * ema_k_value + EMA_temp*(1-ema_k_value)
             take_turn()
         except:
             print(traceback.format_exc())
             game_layer.end_game()
             exit()
         time_diff = time.time() - start_time
-        if time_diff > timeUntilRunEnds:
+        if time_diff > time_until_run_ends:
             game_layer.end_game()
             exit()
-    print("Done with game: " + game_layer.game_state.game_id)
+    print("Done with game: " + state.game_id)
     print("Final score was: " + str(game_layer.get_score()["finalScore"]))
-    return (game_layer.game_state.game_id, game_layer.get_score()["finalScore"])
+    return (state.game_id, game_layer.get_score()["finalScore"])
 
 def take_turn():
-    if not usePrebuiltStrategy:
+    global state
+    if not use_prebuilt_strategy:
         # TODO Implement your artificial intelligence here.
         # TODO Take one action per turn until the game ends.
         # TODO The following is a short example of how to use the StarterKit
@@ -60,16 +62,14 @@ def take_turn():
         else:
             develop_society()
         # messages and errors for console log
-        for message in game_layer.game_state.messages:
+        for message in state.messages:
             print(message)
-        for error in game_layer.game_state.errors:
+        for error in state.errors:
             print("Error: " + error)
 
 
-    # pre-made test strategy
-    # which came with
-    # starter kit
-    if usePrebuiltStrategy:
+    # pre-made test strategy which came with starter kit
+    if use_prebuilt_strategy:
         state = game_layer.game_state
         if len(state.residences) < 1:
             for i in range(len(state.map)):
@@ -107,46 +107,52 @@ def take_turn():
             print("Error: " + error)
 
 def develop_society():
-    state = game_layer.game_state
-    if len(state.residences) < 5:
+    global state
+
+    #check if queue is full
+    if state.housing_queue > 10 + len(state.utilities) * 0.15:
+        queue_is_full = True
+    else:
+        queue_is_full = False
+
+    if len(state.residences) < 2:
         build("Apartments")
     elif len(state.utilities) < 1:
         build("WindTurbine")
-    elif state.funds > 25000 and len(game_layer.game_state.residences) < 11:
+    elif state.funds > 30000 and len(state.residences) < 4:
         build("HighRise")
+    elif queue_is_full: #build if queue full and can afford housing
+
+        build("Apartments")
+        return True
     else:
         game_layer.wait()
 
 def something_needs_attention():
-    print("Checking for emergencies")
-    global building_under_construction
-    global edit_temp
-    global maintain
-    state = game_layer.game_state
+    global building_under_construction, edit_temp, maintain, state
 
     #check if temp needs adjusting
     edit_temp = (False, 0)
     for i in range(len(state.residences)):
         if (state.turn % rounds_between_energy == i) and not state.residences[i].build_progress < 100:
             edit_temp = (True, i)
-
     #check if need for maintainance
     maintain = (False, 0)
     for i in range(len(state.residences)):
         if state.residences[i].health < 41+rounds_between_energy*game_layer.get_residence_blueprint(state.residences[i].building_name).decay_rate:
             maintain = (True, i)
 
-    if maintain[0]:
+    if maintain[0]: #check maintainance
         game_layer.maintenance((state.residences[maintain[1]].X, state.residences[maintain[1]].Y))
         return True
-    elif edit_temp[0]: #adjust temp of building
+    elif edit_temp[0]: #adjust temp of buildings
         adjustEnergy(state.residences[edit_temp[1]])
         return True
     elif building_under_construction is not None: #finish construction
-        if (len(game_layer.game_state.residences) >= building_under_construction[2]) and (game_layer.game_state.residences[building_under_construction[2]].build_progress < 100):
+        if (len(state.residences)-1 >= building_under_construction[2]) and (state.residences[building_under_construction[2]].build_progress < 100):
             game_layer.build((building_under_construction[0], building_under_construction[1]))
             return True
-        elif (len(game_layer.game_state.utilities)-1 >= building_under_construction[2]) and (game_layer.game_state.utilities[building_under_construction[2]].build_progress < 100):
+        elif (len(state.utilities)-1 >= building_under_construction[2]) and (state.utilities[building_under_construction[2]].build_progress < 100):
             game_layer.build((building_under_construction[0], building_under_construction[1]))
             return True
         else:
@@ -156,7 +162,7 @@ def something_needs_attention():
         return False
 
 def chartMap():
-    state = game_layer.game_state
+    global state
     for x in range(len(state.map) - 1):
         for y in range(len(state.map) - 1):
             if state.map[x][y] == 0:
@@ -164,10 +170,9 @@ def chartMap():
     optimizeAvailableTiles()
 
 def adjustEnergy(currentBuilding):
-    global rounds_between_energy
-    global EMA_temp
+    global rounds_between_energy, EMA_temp, state
     blueprint = game_layer.get_residence_blueprint(currentBuilding.building_name)
-    outDoorTemp = game_layer.game_state.current_temp * 2 - EMA_temp
+    outDoorTemp = state.current_temp * 2 - EMA_temp
 
     temp_acceleration = (2*(21 - currentBuilding.temperature)/(rounds_between_energy))
 
@@ -183,8 +188,6 @@ def adjustEnergy(currentBuilding):
 
 
 def optimizeAvailableTiles():
-    #hitta #utilities antal bästa platser i mitten av smeten och sätt de först, sätt allt runt dem i ordning så närmast är längst fram i listan
-    state = game_layer.game_state
     global average_x, average_y, score_list
     average_x = 0
     average_y = 0
@@ -208,9 +211,7 @@ def optimizeAvailableTiles():
 
 def build(structure):
     print("Building " + structure)
-    state = game_layer.game_state
-    global building_under_construction
-    global rounds_between_energy
+    global building_under_construction, rounds_between_energy, state
     for i in range(len(availableTiles)):
         if isinstance(availableTiles[i], tuple):
             game_layer.place_foundation(availableTiles[i], structure)
