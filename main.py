@@ -59,8 +59,11 @@ def take_turn():
     # TODO The following is a short example of how to use the StarterKit
     if something_needs_attention():
         pass
+    elif develop_society():
+        pass
     else:
-        develop_society()
+        game_layer.wait()
+
     # messages and errors for console log
     for message in state.messages:
         print(message)
@@ -108,16 +111,17 @@ def take_turn():
 
 
 def develop_society():
-    global state, queue_timeout, available_tiles
+    global state, queue_timeout, available_tiles, utilities
     if queue_timeout > 1:
         queue_timeout -= 1
 
 
     # priority scores, 1 = very urgent, 0 = not urgent at all
-    build_residence_score = state.housing_queue / (15 * queue_timeout)
+    # queue modifier * funds modifier * existing houses modifier
+    build_residence_score = (state.housing_queue / (15 * queue_timeout)) * (1 - 7500/state.funds) * (1 - len(state.residences) / (len(available_tiles)-utilities))
     upgrade_residence_score = 0
-    build_utility_score = 0
-    build_upgrade_score = 1 - state.turn/700
+    build_utility_score = (len(state.residences) / (len(available_tiles)-utilities)) * (1 - len(state.utilities) / utilities)
+    build_upgrade_score = (1 - state.turn/700) * (2 - 15000/state.funds)
 
     actions = {
         'build_residence': build_residence_score,
@@ -127,18 +131,19 @@ def develop_society():
     }
     decision = str(max(actions, key=actions.get))
 
-    if len(state.residences) < 2:
-        build("Apartments")
+    if len(state.residences) < 1:
+        return build("Apartments")
     elif decision == "build_utility":
-        build("WindTurbine")
+        return build("WindTurbine")
     elif decision == "build_residence":  # build if queue full and can afford housing
-        build("ModernApartments")
+        return build("ModernApartments")
     elif decision == "build_upgrade":
-        # if state.available_upgrades[0].name not in the_only_residence.effects:
-        #    game_layer.buy_upgrade((the_only_residence.X, the_only_residence.Y), state.available_upgrades[0].name)
-        game_layer.wait()
-    else:
-        game_layer.wait()
+        for i in range(5):
+            for residence in state.residences:
+                if state.available_upgrades[i].name not in residence.effects:
+                    game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[i].name)
+                    return True
+
 
 
 def something_needs_attention():
@@ -214,14 +219,12 @@ def optimize_available_tiles():
         average_y += tile[1]
     average_x /= len(available_tiles)
     average_y /= len(available_tiles)
-    print("Assign scores")
     for tile in available_tiles:
         tile_score = abs(tile[0] - average_x) + abs(tile[1] - average_y)
         score_list.append((tile_score, tile))
 
     def sort_key(e):
         return e[0]
-    print("Sorting tile list")
     score_list.sort(key=sort_key)
     for i in range(len(score_list)):
         available_tiles[i] = score_list[i][1]
@@ -230,7 +233,7 @@ def optimize_available_tiles():
 
 def build(structure):
     global building_under_construction, rounds_between_energy, state
-    print("Building " + structure)
+    # print("Building " + structure)
     for i in range(len(available_tiles)):
         if isinstance(available_tiles[i], tuple):
             game_layer.place_foundation(available_tiles[i], structure)
