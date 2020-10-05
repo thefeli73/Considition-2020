@@ -48,7 +48,7 @@ def main():
             exit()
     print("Done with game: " + game_layer.game_state.game_id)
     print("Final score was: " + str(game_layer.get_score()["finalScore"]))
-
+    return (game_layer.game_state.game_id, game_layer.get_score()["finalScore"])
 
 def take_turn():
     if not usePrebuiltStrategy:
