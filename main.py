@@ -193,17 +193,24 @@ def chart_map():
 def adjust_energy(current_building):
     global rounds_between_energy, EMA_temp, state
     blueprint = game_layer.get_residence_blueprint(current_building.building_name)
-    outDoorTemp = state.current_temp * 2 - EMA_temp
+    base_energy = blueprint.base_energy_need
+    if "Charger" in current_building.effects:
+        base_energy += 1.8
 
+    emissivity = blueprint.emissivity
+    if "Insulation" in current_building.effects:
+        emissivity *= 0.6
+
+    outDoorTemp = state.current_temp * 2 - EMA_temp
     temp_acceleration = (2*(21 - current_building.temperature)/(rounds_between_energy))
 
-    effectiveEnergyIn = ((temp_acceleration - 0.04 * current_building.current_pop + (current_building.temperature - outDoorTemp) * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
+    effectiveEnergyIn = ((temp_acceleration - 0.04 * current_building.current_pop + (current_building.temperature - outDoorTemp) * emissivity) / 0.75) + base_energy
 
-    if effectiveEnergyIn > blueprint.base_energy_need:
+    if effectiveEnergyIn > base_energy:
         game_layer.adjust_energy_level((current_building.X, current_building.Y), effectiveEnergyIn)
         return True
-    elif effectiveEnergyIn < blueprint.base_energy_need:
-        game_layer.adjust_energy_level((current_building.X, current_building.Y), blueprint.base_energy_need + 0.01)
+    elif effectiveEnergyIn < base_energy:
+        game_layer.adjust_energy_level((current_building.X, current_building.Y), base_energy + 0.01)
         return True
     else:
         return False
