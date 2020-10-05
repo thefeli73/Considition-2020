@@ -17,12 +17,13 @@ utilities = 3
 
 
 def main():
-    global EMA_temp, rounds_between_energy, building_under_construction, availableTiles, state
+    global EMA_temp, rounds_between_energy, building_under_construction, availableTiles, state, queue_timeout
     #global vars
     rounds_between_energy = 5
     EMA_temp = None
     building_under_construction = None
     availableTiles = []
+    queue_timeout = 0
 
     game_layer.new_game(map_name)
     print("Starting game: " + game_layer.game_state.game_id)
@@ -107,13 +108,22 @@ def take_turn():
             print("Error: " + error)
 
 def develop_society():
-    global state
+    global state, queue_timeout
 
     #check if queue is full
-    if state.housing_queue > 10 + len(state.utilities) * 0.15:
+    if (state.housing_queue > 10 + len(state.utilities) * 0.15) and queue_timeout >= 5:
         queue_is_full = True
+        queue_timeout = 0
     else:
         queue_is_full = False
+        queue_timeout += 1
+
+    build_residence_score = 0
+    upgrade_residence_score = 0
+    build_utility_score = 0
+    build_upgrade_score = 0
+
+    decision_engine = None
 
     if len(state.residences) < 2:
         build("Apartments")
@@ -122,9 +132,11 @@ def develop_society():
     elif state.funds > 30000 and len(state.residences) < 4:
         build("HighRise")
     elif queue_is_full: #build if queue full and can afford housing
-
-        build("Apartments")
-        return True
+        build("ModernApartments")
+    elif build_upgrade_score:
+        #if state.available_upgrades[0].name not in the_only_residence.effects:
+        #    game_layer.buy_upgrade((the_only_residence.X, the_only_residence.Y), state.available_upgrades[0].name)
+        pass
     else:
         game_layer.wait()
 
