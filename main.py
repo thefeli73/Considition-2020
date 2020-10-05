@@ -17,12 +17,12 @@ utilities = 3
 
 
 def main():
-    global EMA_temp, rounds_between_energy, building_under_construction, availableTiles, state, queue_timeout
+    global EMA_temp, rounds_between_energy, building_under_construction, available_tiles, state, queue_timeout
     #global vars
     rounds_between_energy = 5
     EMA_temp = None
     building_under_construction = None
-    availableTiles = []
+    available_tiles = []
     queue_timeout = 0
 
     game_layer.new_game(map_name)
@@ -108,7 +108,7 @@ def take_turn():
             print("Error: " + error)
 
 def develop_society():
-    global state, queue_timeout
+    global state, queue_timeout, available_tiles
 
     #check if queue is full
     if (state.housing_queue > 10 + len(state.utilities) * 0.15) and queue_timeout >= 5:
@@ -182,8 +182,8 @@ def chartMap():
     for x in range(len(state.map) - 1):
         for y in range(len(state.map) - 1):
             if state.map[x][y] == 0:
-                availableTiles.append((x, y))
-    optimizeAvailableTiles()
+                available_tiles.append((x, y))
+    optimize_available_tiles()
 
 def adjustEnergy(currentBuilding):
     global rounds_between_energy, EMA_temp, state
@@ -203,18 +203,18 @@ def adjustEnergy(currentBuilding):
         game_layer.wait()
 
 
-def optimizeAvailableTiles():
+def optimize_available_tiles():
     global average_x, average_y, score_list
     average_x = 0
     average_y = 0
     score_list = []
-    for tile in availableTiles: #calc average coords
+    for tile in available_tiles: #calc average coords
         average_x += tile[0]
         average_y += tile[1]
-    average_x /= len(availableTiles)
-    average_y /= len(availableTiles)
+    average_x /= len(available_tiles)
+    average_y /= len(available_tiles)
     print("Assign scores")
-    for tile in availableTiles:
+    for tile in available_tiles:
         tile_score = abs(tile[0] - average_x) + abs(tile[1] - average_y)
         score_list.append((tile_score, tile))
     def sort_key(e):
@@ -222,22 +222,22 @@ def optimizeAvailableTiles():
     print("Sorting tile list")
     score_list.sort(key=sort_key)
     for i in range(len(score_list)):
-        availableTiles[i] = score_list[i][1]
+        available_tiles[i] = score_list[i][1]
     print("average x,y: " + str(average_x) + ", " + str(average_y))
 
 def build(structure):
     global building_under_construction, rounds_between_energy, state
     print("Building " + structure)
-    for i in range(len(availableTiles)):
-        if isinstance(availableTiles[i], tuple):
-            game_layer.place_foundation(availableTiles[i], structure)
+    for i in range(len(available_tiles)):
+        if isinstance(available_tiles[i], tuple):
+            game_layer.place_foundation(available_tiles[i], structure)
             for building in state.available_residence_buildings:
                 if structure in building.building_name:
                     for j in range(len(state.residences)):
                         building = state.residences[j]
                         coords_to_check = (building.X, building.Y)
-                        if coords_to_check == availableTiles[i]:
-                            availableTiles[i] = building
+                        if coords_to_check == available_tiles[i]:
+                            available_tiles[i] = building
                             building_under_construction = (building.X, building.Y, j)
                             rounds_between_energy = len(state.residences)+2
                             return True
@@ -246,8 +246,8 @@ def build(structure):
                     for j in range(len(state.utilities)):
                         building = state.utilities[j]
                         coords_to_check = (building.X, building.Y)
-                        if coords_to_check == availableTiles[i]:
-                            availableTiles[i] = building
+                        if coords_to_check == available_tiles[i]:
+                            available_tiles[i] = building
                             building_under_construction = (building.X, building.Y, j)
                             rounds_between_energy = len(state.residences)+2
                             return True
