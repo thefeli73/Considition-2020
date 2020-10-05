@@ -194,42 +194,6 @@ def take_turn():
         for error in game_layer.game_state.errors:
             print("Error: " + error)
 
-
-def chartMap():
-    state = game_layer.game_state
-    for x in range(len(state.map) - 1):
-        for y in range(len(state.map) - 1):
-            if state.map[x][y] == 0:
-                availableTiles.append((x, y))
-    optimizeAvailableTiles()
-
-def adjustEnergy(currentBuilding):
-    global rounds_between_energy
-    global EMA_temp
-    blueprint = game_layer.get_residence_blueprint(currentBuilding.building_name)
-    outDoorTemp = game_layer.game_state.current_temp * 2 - EMA_temp
-
-    temp_acceleration = (2*(21 - currentBuilding.temperature)/(rounds_between_energy))
-
-    effectiveEnergyIn = ((temp_acceleration - 0.04 * currentBuilding.current_pop + (currentBuilding.temperature - outDoorTemp) * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
-
-    if effectiveEnergyIn > blueprint.base_energy_need:
-        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), effectiveEnergyIn)
-    elif effectiveEnergyIn < blueprint.base_energy_need:
-        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), blueprint.base_energy_need + 0.01)
-    else:
-        print("you did it!")
-        game_layer.wait()
-
-
-
-
-
-def optimizeAvailableTiles():
-    #hitta #utilities antal bästa platser i mitten av smeten och sätt de först, sätt allt runt dem i ordning så närmast är längst fram i listan
-    pass
-
-
 def something_needs_attention():
     print("Checking for emergencies")
     global building_under_construction
@@ -278,6 +242,42 @@ def develop_society():
         build("HighRise")
     else:
         game_layer.wait()
+
+def chartMap():
+    state = game_layer.game_state
+    for x in range(len(state.map) - 1):
+        for y in range(len(state.map) - 1):
+            if state.map[x][y] == 0:
+                availableTiles.append((x, y))
+    optimizeAvailableTiles()
+
+def adjustEnergy(currentBuilding):
+    global rounds_between_energy
+    global EMA_temp
+    blueprint = game_layer.get_residence_blueprint(currentBuilding.building_name)
+    outDoorTemp = game_layer.game_state.current_temp * 2 - EMA_temp
+
+    temp_acceleration = (2*(21 - currentBuilding.temperature)/(rounds_between_energy))
+
+    effectiveEnergyIn = ((temp_acceleration - 0.04 * currentBuilding.current_pop + (currentBuilding.temperature - outDoorTemp) * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
+
+    if effectiveEnergyIn > blueprint.base_energy_need:
+        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), effectiveEnergyIn)
+    elif effectiveEnergyIn < blueprint.base_energy_need:
+        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), blueprint.base_energy_need + 0.01)
+    else:
+        print("you did it!")
+        game_layer.wait()
+
+
+
+
+
+def optimizeAvailableTiles():
+    #hitta #utilities antal bästa platser i mitten av smeten och sätt de först, sätt allt runt dem i ordning så närmast är längst fram i listan
+    pass
+
+
 
 def build(structure):
     print("Building " + structure)
