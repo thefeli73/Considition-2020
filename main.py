@@ -118,31 +118,48 @@ def develop_society():
 
     # priority scores, 1 = very urgent, 0 = not urgent at all
     # queue modifier * funds modifier * existing houses modifier
-    build_residence_score = (state.housing_queue / (15 * queue_timeout)) * (1 - 7500/state.funds) * (1 - len(state.residences) / (len(available_tiles)-utilities))
+    build_residence_score = (state.housing_queue / (15 * queue_timeout)) * (1 - (7500 / state.funds)) * (1 - (len(state.residences) / (len(available_tiles)-utilities)))
     upgrade_residence_score = 0
-    build_utility_score = (len(state.residences) / (len(available_tiles)-utilities)) * (1 - len(state.utilities) / utilities)
-    build_upgrade_score = (1 - state.turn/700) * (2 - 15000/state.funds)
-
-    actions = {
-        'build_residence': build_residence_score,
-        'upgrade_residence': upgrade_residence_score,
-        'build_utility': build_utility_score,
-        'build_upgrade': build_upgrade_score
-    }
-    decision = str(max(actions, key=actions.get))
+    # existing houses modifier * funds modifier * existing utilities modifier
+    build_utility_score = (len(state.residences) / (len(available_tiles)-utilities)) * (1 - (16000 / state.funds)) * (1 - (len(state.utilities) / utilities))
+    # turn modifier * funds modifier
+    build_upgrade_score = (1 - (state.turn / 700)) * (2 - (15000 / state.funds))
 
     if len(state.residences) < 1:
-        return build("Apartments")
-    elif decision == "build_utility":
-        return build("WindTurbine")
-    elif decision == "build_residence":  # build if queue full and can afford housing
-        return build("ModernApartments")
-    elif decision == "build_upgrade":
-        for i in range(5):
-            for residence in state.residences:
-                if state.available_upgrades[i].name not in residence.effects:
-                    game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[i].name)
-                    return True
+        build_residence_score = 100
+
+    decision = [
+        ('build_residence', build_residence_score),
+        ('upgrade_residence', upgrade_residence_score),
+        ('build_utility', build_utility_score),
+        ('build_upgrade', build_upgrade_score)
+    ]
+    def sort_key(e):
+        return e[1]
+    decision.sort(reverse=True, key=sort_key)
+    print(decision)
+
+    for i in range(4):
+        if decision[0][0] == "build_residence":  # build housing
+            queue_timeout = 5
+            #return build("ModernApartments")
+            if len(state.residences) < len(state.available_residence_buildings):
+                return build(state.available_residence_buildings[len(state.residences)].building_name)
+
+        if decision[0][0] == "build_utility":  # build utilities
+            return build("WindTurbine")
+
+        if decision[0][0] == "upgrade_residence":  # build utilities
+            pass
+
+        if decision[0][0] == "build_upgrade":  # build upgrades
+            for i in range(6):
+                for residence in state.residences:
+                    if state.available_upgrades[i].name not in residence.effects:
+                        game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[i].name)
+                        return True
+        del decision[0]
+    return False
 
 
 
