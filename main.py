@@ -151,9 +151,13 @@ def something_needs_attention():
     elif building_under_construction is not None: #finish construction
         if (len(state.residences)-1 >= building_under_construction[2]) and (state.residences[building_under_construction[2]].build_progress < 100):
             game_layer.build((building_under_construction[0], building_under_construction[1]))
+            if not state.residences[building_under_construction[2]].build_progress < 100:
+                building_under_construction = None
             return True
         elif (len(state.utilities)-1 >= building_under_construction[2]) and (state.utilities[building_under_construction[2]].build_progress < 100):
             game_layer.build((building_under_construction[0], building_under_construction[1]))
+            if not state.residences[building_under_construction[2]].build_progress < 100:
+                building_under_construction = None
             return True
         else:
             building_under_construction = None
@@ -210,8 +214,8 @@ def optimizeAvailableTiles():
     print("average x,y: " + str(average_x) + ", " + str(average_y))
 
 def build(structure):
-    print("Building " + structure)
     global building_under_construction, rounds_between_energy, state
+    print("Building " + structure)
     for i in range(len(availableTiles)):
         if isinstance(availableTiles[i], tuple):
             game_layer.place_foundation(availableTiles[i], structure)
