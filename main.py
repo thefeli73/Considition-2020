@@ -10,7 +10,7 @@ api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 # The different map names can be found on considition.com/rules
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 game_layer = GameLayer(api_key)
-#settings
+# settings
 use_prebuilt_strategy = False
 time_until_run_ends = 70
 utilities = 3
@@ -18,7 +18,7 @@ utilities = 3
 
 def main():
     global EMA_temp, rounds_between_energy, building_under_construction, available_tiles, state, queue_timeout
-    #global vars
+    # global vars
     rounds_between_energy = 5
     EMA_temp = None
     building_under_construction = None
@@ -31,7 +31,7 @@ def main():
     # start timeout timer
     start_time = time.time()
     state = game_layer.game_state
-    chartMap()
+    chart_map()
     while state.turn < state.max_turns:
         state = game_layer.game_state
         try:
@@ -40,7 +40,7 @@ def main():
             ema_k_value = (2/(rounds_between_energy+1))
             EMA_temp = state.current_temp * ema_k_value + EMA_temp*(1-ema_k_value)
             take_turn()
-        except:
+        except Exception:
             print(traceback.format_exc())
             game_layer.end_game()
             exit()
@@ -51,6 +51,7 @@ def main():
     print("Done with game: " + state.game_id)
     print("Final score was: " + str(game_layer.get_score()["finalScore"]))
     return (state.game_id, game_layer.get_score()["finalScore"])
+
 
 def take_turn():
     global state
@@ -67,7 +68,6 @@ def take_turn():
             print(message)
         for error in state.errors:
             print("Error: " + error)
-
 
     # pre-made test strategy which came with starter kit
     if use_prebuilt_strategy:
@@ -107,10 +107,11 @@ def take_turn():
         for error in game_layer.game_state.errors:
             print("Error: " + error)
 
+
 def develop_society():
     global state, queue_timeout, available_tiles
 
-    #check if queue is full
+    # check if queue is full
     if (state.housing_queue > 10 + len(state.utilities) * 0.15) and queue_timeout >= 5:
         queue_is_full = True
         queue_timeout = 0
@@ -131,33 +132,34 @@ def develop_society():
         build("WindTurbine")
     elif state.funds > 30000 and len(state.residences) < 4:
         build("HighRise")
-    elif queue_is_full: #build if queue full and can afford housing
+    elif queue_is_full:  # build if queue full and can afford housing
         build("ModernApartments")
     elif build_upgrade_score:
-        #if state.available_upgrades[0].name not in the_only_residence.effects:
+        # if state.available_upgrades[0].name not in the_only_residence.effects:
         #    game_layer.buy_upgrade((the_only_residence.X, the_only_residence.Y), state.available_upgrades[0].name)
         pass
     else:
         game_layer.wait()
 
+
 def something_needs_attention():
     global building_under_construction, edit_temp, maintain, state
 
-    #check if temp needs adjusting
+    # check if temp needs adjusting
     edit_temp = (False, 0)
     for i in range(len(state.residences)):
         if (state.turn % rounds_between_energy == i) and not state.residences[i].build_progress < 100:
             edit_temp = (True, i)
-    #check if need for maintainance
+    # check if need for maintenance
     maintain = (False, 0)
     for i in range(len(state.residences)):
         if state.residences[i].health < 41+rounds_between_energy*game_layer.get_residence_blueprint(state.residences[i].building_name).decay_rate:
             maintain = (True, i)
 
-    if maintain[0]: #check maintainance
+    if maintain[0]:  # check maintenance
         game_layer.maintenance((state.residences[maintain[1]].X, state.residences[maintain[1]].Y))
         return True
-    elif edit_temp[0]: #adjust temp of buildings
+    elif edit_temp[0]:  # adjust temp of buildings
         adjustEnergy(state.residences[edit_temp[1]])
         return True
     elif building_under_construction is not None: #finish construction
@@ -177,7 +179,7 @@ def something_needs_attention():
     else:
         return False
 
-def chartMap():
+def chart_map():
     global state
     for x in range(len(state.map) - 1):
         for y in range(len(state.map) - 1):
@@ -185,19 +187,20 @@ def chartMap():
                 available_tiles.append((x, y))
     optimize_available_tiles()
 
-def adjustEnergy(currentBuilding):
+
+def adjust_energy(current_building):
     global rounds_between_energy, EMA_temp, state
-    blueprint = game_layer.get_residence_blueprint(currentBuilding.building_name)
+    blueprint = game_layer.get_residence_blueprint(current_building.building_name)
     outDoorTemp = state.current_temp * 2 - EMA_temp
 
-    temp_acceleration = (2*(21 - currentBuilding.temperature)/(rounds_between_energy))
+    temp_acceleration = (2*(21 - current_building.temperature)/(rounds_between_energy))
 
-    effectiveEnergyIn = ((temp_acceleration - 0.04 * currentBuilding.current_pop + (currentBuilding.temperature - outDoorTemp) * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
+    effectiveEnergyIn = ((temp_acceleration - 0.04 * current_building.current_pop + (current_building.temperature - outDoorTemp) * blueprint.emissivity) / 0.75) + blueprint.base_energy_need
 
     if effectiveEnergyIn > blueprint.base_energy_need:
-        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), effectiveEnergyIn)
+        game_layer.adjust_energy_level((current_building.X, current_building.Y), effectiveEnergyIn)
     elif effectiveEnergyIn < blueprint.base_energy_need:
-        game_layer.adjust_energy_level((currentBuilding.X, currentBuilding.Y), blueprint.base_energy_need + 0.01)
+        game_layer.adjust_energy_level((current_building.X, current_building.Y), blueprint.base_energy_need + 0.01)
     else:
         print("you did it!")
         game_layer.wait()
@@ -208,7 +211,7 @@ def optimize_available_tiles():
     average_x = 0
     average_y = 0
     score_list = []
-    for tile in available_tiles: #calc average coords
+    for tile in available_tiles:  # calc average coordinates
         average_x += tile[0]
         average_y += tile[1]
     average_x /= len(available_tiles)
@@ -217,6 +220,7 @@ def optimize_available_tiles():
     for tile in available_tiles:
         tile_score = abs(tile[0] - average_x) + abs(tile[1] - average_y)
         score_list.append((tile_score, tile))
+
     def sort_key(e):
         return e[0]
     print("Sorting tile list")
@@ -224,6 +228,7 @@ def optimize_available_tiles():
     for i in range(len(score_list)):
         available_tiles[i] = score_list[i][1]
     print("average x,y: " + str(average_x) + ", " + str(average_y))
+
 
 def build(structure):
     global building_under_construction, rounds_between_energy, state
