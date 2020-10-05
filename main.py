@@ -106,6 +106,17 @@ def take_turn():
         for error in game_layer.game_state.errors:
             print("Error: " + error)
 
+def develop_society():
+    state = game_layer.game_state
+    if len(state.residences) < 5:
+        build("Apartments")
+    elif len(state.utilities) < 1:
+        build("WindTurbine")
+    elif state.funds > 25000 and len(game_layer.game_state.residences) < 11:
+        build("HighRise")
+    else:
+        game_layer.wait()
+
 def something_needs_attention():
     print("Checking for emergencies")
     global building_under_construction
@@ -143,17 +154,6 @@ def something_needs_attention():
             return False
     else:
         return False
-
-def develop_society():
-    state = game_layer.game_state
-    if len(state.residences) < 5:
-        build("Apartments")
-    elif len(state.utilities) < 1:
-        build("WindTurbine")
-    elif state.funds > 25000 and len(game_layer.game_state.residences) < 11:
-        build("HighRise")
-    else:
-        game_layer.wait()
 
 def chartMap():
     state = game_layer.game_state
