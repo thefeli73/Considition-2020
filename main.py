@@ -184,8 +184,27 @@ def adjustEnergy(currentBuilding):
 
 def optimizeAvailableTiles():
     #hitta #utilities antal bästa platser i mitten av smeten och sätt de först, sätt allt runt dem i ordning så närmast är längst fram i listan
-    pass
-
+    state = game_layer.game_state
+    global average_x, average_y, score_list
+    average_x = 0
+    average_y = 0
+    score_list = []
+    for tile in availableTiles: #calc average coords
+        average_x += tile[0]
+        average_y += tile[1]
+    average_x /= len(availableTiles)
+    average_y /= len(availableTiles)
+    print("Assign scores")
+    for tile in availableTiles:
+        tile_score = abs(tile[0] - average_x) + abs(tile[1] - average_y)
+        score_list.append((tile_score, tile))
+    def sort_key(e):
+        return e[0]
+    print("Sorting tile list")
+    score_list.sort(key=sort_key)
+    for i in range(len(score_list)):
+        availableTiles[i] = score_list[i][1]
+    print("average x,y: " + str(average_x) + ", " + str(average_y))
 
 def build(structure):
     print("Building " + structure)
