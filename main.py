@@ -11,7 +11,6 @@ api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 game_layer = GameLayer(api_key)
 # settings
-use_prebuilt_strategy = False
 time_until_run_ends = 70
 utilities = 3
 
@@ -23,7 +22,7 @@ def main():
     EMA_temp = None
     building_under_construction = None
     available_tiles = []
-    queue_timeout = 0
+    queue_timeout = 1
 
     game_layer.new_game(map_name)
     print("Starting game: " + game_layer.game_state.game_id)
@@ -55,106 +54,105 @@ def main():
 
 def take_turn():
     global state
-    if not use_prebuilt_strategy:
-        # TODO Implement your artificial intelligence here.
-        # TODO Take one action per turn until the game ends.
-        # TODO The following is a short example of how to use the StarterKit
-        if something_needs_attention():
-            pass
-        else:
-            develop_society()
-        # messages and errors for console log
-        for message in state.messages:
-            print(message)
-        for error in state.errors:
-            print("Error: " + error)
+    # TODO Implement your artificial intelligence here.
+    # TODO Take one action per turn until the game ends.
+    # TODO The following is a short example of how to use the StarterKit
+    if something_needs_attention():
+        pass
+    else:
+        develop_society()
+    # messages and errors for console log
+    for message in state.messages:
+        print(message)
+    for error in state.errors:
+        print("Error: " + error)
 
     # pre-made test strategy which came with starter kit
-    if use_prebuilt_strategy:
-        state = game_layer.game_state
-        if len(state.residences) < 1:
-            for i in range(len(state.map)):
-                for j in range(len(state.map)):
-                    if state.map[i][j] == 0:
-                        x = i
-                        y = j
-                        break
-            game_layer.place_foundation((x, y), game_layer.game_state.available_residence_buildings[0].building_name)
+    '''
+    state = game_layer.game_state
+    if len(state.residences) < 1:
+        for i in range(len(state.map)):
+            for j in range(len(state.map)):
+                if state.map[i][j] == 0:
+                    x = i
+                    y = j
+                    break
+        game_layer.place_foundation((x, y), game_layer.game_state.available_residence_buildings[0].building_name)
+    else:
+        the_only_residence = state.residences[0]
+        if the_only_residence.build_progress < 100:
+            game_layer.build((the_only_residence.X, the_only_residence.Y))
+        elif the_only_residence.health < 50:
+            game_layer.maintenance((the_only_residence.X, the_only_residence.Y))
+        elif the_only_residence.temperature < 18:
+            blueprint = game_layer.get_residence_blueprint(the_only_residence.building_name)
+            energy = blueprint.base_energy_need + 0.5 \
+                     + (the_only_residence.temperature - state.current_temp) * blueprint.emissivity / 1 \
+                     - the_only_residence.current_pop * 0.04
+            game_layer.adjust_energy_level((the_only_residence.X, the_only_residence.Y), energy)
+        elif the_only_residence.temperature > 24:
+            blueprint = game_layer.get_residence_blueprint(the_only_residence.building_name)
+            energy = blueprint.base_energy_need - 0.5 \
+                     + (the_only_residence.temperature - state.current_temp) * blueprint.emissivity / 1 \
+                     - the_only_residence.current_pop * 0.04
+            game_layer.adjust_energy_level((the_only_residence.X, the_only_residence.Y), energy)
+        elif state.available_upgrades[0].name not in the_only_residence.effects:
+            game_layer.buy_upgrade((the_only_residence.X, the_only_residence.Y), state.available_upgrades[0].name)
         else:
-            the_only_residence = state.residences[0]
-            if the_only_residence.build_progress < 100:
-                game_layer.build((the_only_residence.X, the_only_residence.Y))
-            elif the_only_residence.health < 50:
-                game_layer.maintenance((the_only_residence.X, the_only_residence.Y))
-            elif the_only_residence.temperature < 18:
-                blueprint = game_layer.get_residence_blueprint(the_only_residence.building_name)
-                energy = blueprint.base_energy_need + 0.5 \
-                         + (the_only_residence.temperature - state.current_temp) * blueprint.emissivity / 1 \
-                         - the_only_residence.current_pop * 0.04
-                game_layer.adjust_energy_level((the_only_residence.X, the_only_residence.Y), energy)
-            elif the_only_residence.temperature > 24:
-                blueprint = game_layer.get_residence_blueprint(the_only_residence.building_name)
-                energy = blueprint.base_energy_need - 0.5 \
-                         + (the_only_residence.temperature - state.current_temp) * blueprint.emissivity / 1 \
-                         - the_only_residence.current_pop * 0.04
-                game_layer.adjust_energy_level((the_only_residence.X, the_only_residence.Y), energy)
-            elif state.available_upgrades[0].name not in the_only_residence.effects:
-                game_layer.buy_upgrade((the_only_residence.X, the_only_residence.Y), state.available_upgrades[0].name)
-            else:
-                game_layer.wait()
-        for message in game_layer.game_state.messages:
-            print(message)
-        for error in game_layer.game_state.errors:
-            print("Error: " + error)
+            game_layer.wait()
+    for message in game_layer.game_state.messages:
+        print(message)
+    for error in game_layer.game_state.errors:
+        print("Error: " + error)
+        '''
 
 
 def develop_society():
     global state, queue_timeout, available_tiles
+    if queue_timeout > 1:
+        queue_timeout -= 1
 
-    # check if queue is full
-    if (state.housing_queue > 10 + len(state.utilities) * 0.15) and queue_timeout >= 5:
-        queue_is_full = True
-        queue_timeout = 0
-    else:
-        queue_is_full = False
-        queue_timeout += 1
 
-    build_residence_score = 0
+    # priority scores, 1 = very urgent, 0 = not urgent at all
+    build_residence_score = state.housing_queue / (15 * queue_timeout)
     upgrade_residence_score = 0
     build_utility_score = 0
-    build_upgrade_score = 0
+    build_upgrade_score = 1 - state.turn/700
 
-    decision_engine = None
+    actions = {
+        'build_residence': build_residence_score,
+        'upgrade_residence': upgrade_residence_score,
+        'build_utility': build_utility_score,
+        'build_upgrade': build_upgrade_score
+    }
+    decision = str(max(actions, key=actions.get))
 
     if len(state.residences) < 2:
         build("Apartments")
-    elif len(state.utilities) < 1:
+    elif decision == "build_utility":
         build("WindTurbine")
-    elif state.funds > 30000 and len(state.residences) < 4:
-        build("HighRise")
-    elif queue_is_full:  # build if queue full and can afford housing
+    elif decision == "build_residence":  # build if queue full and can afford housing
         build("ModernApartments")
-    elif build_upgrade_score:
+    elif decision == "build_upgrade":
         # if state.available_upgrades[0].name not in the_only_residence.effects:
         #    game_layer.buy_upgrade((the_only_residence.X, the_only_residence.Y), state.available_upgrades[0].name)
-        pass
+        game_layer.wait()
     else:
         game_layer.wait()
 
 
 def something_needs_attention():
-    global building_under_construction, edit_temp, maintain, state
+    global building_under_construction, edit_temp, maintain, state, rounds_between_energy
 
     # check if temp needs adjusting
     edit_temp = (False, 0)
-    for i in range(len(state.residences)):
-        if (state.turn % rounds_between_energy == i) and not state.residences[i].build_progress < 100:
-            edit_temp = (True, i)
     # check if need for maintenance
     maintain = (False, 0)
     for i in range(len(state.residences)):
-        if state.residences[i].health < 41+rounds_between_energy*game_layer.get_residence_blueprint(state.residences[i].building_name).decay_rate:
+        if state.residences[i].health < 35+rounds_between_energy*game_layer.get_residence_blueprint(state.residences[i].building_name).decay_rate:
             maintain = (True, i)
+        if (state.turn % rounds_between_energy == i) and not state.residences[i].build_progress < 100:
+            edit_temp = (True, i)
 
     if maintain[0]:  # check maintenance
         game_layer.maintenance((state.residences[maintain[1]].X, state.residences[maintain[1]].Y))
