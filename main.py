@@ -142,10 +142,10 @@ def develop_society():
     for i in range(4):
         if decision[0][0] == "build_residence":  # build housing
             queue_timeout = 5
-            #return build("ModernApartments")
             if len(state.residences) < len(state.available_residence_buildings):
                 return build(state.available_residence_buildings[len(state.residences)].building_name)
-
+            else:
+                calculate_residence_score()
         if decision[0][0] == "build_utility":  # build utilities
             return build("WindTurbine")
 
@@ -198,6 +198,7 @@ def something_needs_attention():
     else:
         return False
 
+
 def chart_map():
     global state
     for x in range(len(state.map) - 1):
@@ -205,6 +206,28 @@ def chart_map():
             if state.map[x][y] == 0:
                 available_tiles.append((x, y))
     optimize_available_tiles()
+
+
+def optimize_available_tiles():
+    global average_x, average_y, score_list
+    average_x = 0
+    average_y = 0
+    score_list = []
+    for tile in available_tiles:  # calc average coordinates
+        average_x += tile[0]
+        average_y += tile[1]
+    average_x /= len(available_tiles)
+    average_y /= len(available_tiles)
+    for tile in available_tiles:
+        tile_score = abs(tile[0] - average_x) + abs(tile[1] - average_y)
+        score_list.append((tile_score, tile))
+
+    def sort_key(e):
+        return e[0]
+    score_list.sort(key=sort_key)
+    for i in range(len(score_list)):
+        available_tiles[i] = score_list[i][1]
+    print("average x,y: " + str(average_x) + ", " + str(average_y))
 
 
 def adjust_energy(current_building):
@@ -231,28 +254,6 @@ def adjust_energy(current_building):
         return True
     else:
         return False
-
-
-def optimize_available_tiles():
-    global average_x, average_y, score_list
-    average_x = 0
-    average_y = 0
-    score_list = []
-    for tile in available_tiles:  # calc average coordinates
-        average_x += tile[0]
-        average_y += tile[1]
-    average_x /= len(available_tiles)
-    average_y /= len(available_tiles)
-    for tile in available_tiles:
-        tile_score = abs(tile[0] - average_x) + abs(tile[1] - average_y)
-        score_list.append((tile_score, tile))
-
-    def sort_key(e):
-        return e[0]
-    score_list.sort(key=sort_key)
-    for i in range(len(score_list)):
-        available_tiles[i] = score_list[i][1]
-    print("average x,y: " + str(average_x) + ", " + str(average_y))
 
 
 def build(structure):
