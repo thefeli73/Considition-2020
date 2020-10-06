@@ -13,6 +13,7 @@ game_layer = GameLayer(api_key)
 # settings
 time_until_run_ends = 70
 utilities = 3
+money_reserve_multiplier = 1.5
 
 
 def main():
@@ -118,12 +119,12 @@ def develop_society():
 
     # priority scores, 1 = very urgent, 0 = not urgent at all
     # queue modifier * funds modifier * existing houses modifier
-    build_residence_score = (state.housing_queue / (15 * queue_timeout)) * (1 - (7500 / state.funds)) * (1 - (len(state.residences) / (len(available_tiles)-utilities)))
+    build_residence_score = (state.housing_queue / (15 * queue_timeout)) * (1 - (7500 / (1 + state.funds))) * (1 - (len(state.residences) / (1 + len(available_tiles) - utilities)))
     upgrade_residence_score = 0
     # existing houses modifier * funds modifier * existing utilities modifier
-    build_utility_score = (len(state.residences) / (len(available_tiles)-utilities)) * (1 - (16000 / state.funds)) * (1 - (len(state.utilities) / utilities))
+    build_utility_score = (len(state.residences) / (1 + len(available_tiles)-utilities)) * (1 - (16000 / (1 + state.funds))) * (1 - (len(state.utilities) / utilities))
     # turn modifier * funds modifier
-    build_upgrade_score = (1 - (state.turn / 700)) * (2 - (15000 / state.funds))
+    build_upgrade_score = (1 - (state.turn / 700)) * (2 - (15000 / (1 + state.funds)))
 
     if len(state.residences) < 1:
         build_residence_score = 100
@@ -137,28 +138,35 @@ def develop_society():
     def sort_key(e):
         return e[1]
     decision.sort(reverse=True, key=sort_key)
-    print(decision)
 
     for i in range(4):
         if decision[0][0] == "build_residence":  # build housing
             queue_timeout = 5
-            if len(state.residences) < len(state.available_residence_buildings):
-                return build(state.available_residence_buildings[len(state.residences)].building_name)
-            else:
-                calculate_residence_score()
+            #if len(state.residences) < len(state.available_residence_buildings):
+            #    return build(state.available_residence_buildings[len(state.residences)].building_name)
+            #else:
+            cbr = calculate_best_residence()
+            if cbr:
+                return build(cbr[1])
         if decision[0][0] == "build_utility":  # build utilities
-            return build("WindTurbine")
-
+            #return build("WindTurbine")
+            pass
         if decision[0][0] == "upgrade_residence":  # build utilities
             pass
-
         if decision[0][0] == "build_upgrade":  # build upgrades
-            for i in range(6):
-                for residence in state.residences:
-                    if state.available_upgrades[i].name not in residence.effects:
-                        game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[i].name)
-                        return True
+            for residence in state.residences:
+                if state.available_upgrades[0].name not in residence.effects and (money_reserve_multiplier*3500 < state.funds) and ((total_income() - 6) > 50):
+                    game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[0].name)
+                    return True
+                if state.available_upgrades[5].name not in residence.effects and (money_reserve_multiplier*1250 < state.funds):
+                    game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[5].name)
+                    return True
+            gbp = get_best_upgrade()
+            if gbp:
+                game_layer.buy_upgrade((gbp[2].X, gbp[2].Y), gbp[1])
+                return True
         del decision[0]
+
     return False
 
 
@@ -197,6 +205,94 @@ def something_needs_attention():
             return False
     else:
         return False
+
+
+def total_income():
+    global state
+    income = 0
+    for residence in state.residences:
+        income += game_layer.get_residence_blueprint(residence.building_name).income_per_pop * residence.current_pop
+    return income
+
+
+def get_best_upgrade():
+    global state
+
+    best_upgrade = []
+    for residence in state.residences:
+        cbu = calculate_best_upgrade(residence)
+        if cbu is not False:
+            score = cbu[0]
+            upgrade = cbu[1]
+            best_upgrade.append((score, upgrade, residence))
+
+    def sort_key(e):
+        return e[0]
+    best_upgrade.sort(reverse=True, key=sort_key)
+    if not best_upgrade:
+        return False
+    return best_upgrade[0]
+
+
+def calculate_best_upgrade(current_building):
+    global state
+
+    rounds_left = 700 - state.turn
+    current_pop = current_building.current_pop
+    blueprint = game_layer.get_blueprint(current_building.building_name)
+    base_energy_need = blueprint.base_energy_need
+    best_upgrade = []
+    for upgrade in state.available_upgrades:
+        effect = game_layer.get_effect(upgrade.effect)
+        if (upgrade.name not in current_building.effects) and ((total_income() + effect.building_income_increase) > 50) and (money_reserve_multiplier*upgrade.cost < state.funds):
+            average_outdoor_temp = (state.max_temp - state.min_temp)/2
+
+            average_heating_energy = (((21 - average_outdoor_temp) * blueprint.emissivity * effect.emissivity_multiplier) / 0.75)
+            old_average_heating_energy = (((21 - average_outdoor_temp) * blueprint.emissivity) / 0.75)
+
+            lifetime_energy = (base_energy_need + effect.base_energy_mwh_increase + average_heating_energy - effect.mwh_production) * rounds_left
+            old_lifetime_energy = (base_energy_need + old_average_heating_energy) * rounds_left
+
+
+            upgrade_co2 = (effect.co2_per_pop_increase * 0.03) * current_pop * rounds_left + (0.1 * lifetime_energy / 1000)
+            old_co2 = 0.03 * current_pop * rounds_left + (0.1 * old_lifetime_energy / 1000)
+            co2 = upgrade_co2 - old_co2
+            max_happiness = effect.max_happiness_increase * rounds_left
+
+            score = max_happiness/10 - co2
+            best_upgrade.append((score, upgrade.name))
+
+    def sort_key(e):
+        return e[0]
+    best_upgrade.sort(reverse=True, key=sort_key)
+    if not best_upgrade:
+        return False
+    return best_upgrade[0]
+
+
+def calculate_best_residence():
+    global state
+
+    rounds_left = 700 - state.turn
+    best_residence = []
+    for residence_blueprint in state.available_residence_buildings:
+        if state.turn >= residence_blueprint.release_tick and (money_reserve_multiplier*residence_blueprint.cost < state.funds):
+            average_outdoor_temp = (state.max_temp - state.min_temp)/2
+            average_heating_energy = ((0 - 0.04 * residence_blueprint.max_pop + (21 - average_outdoor_temp) * residence_blueprint.emissivity) / 0.75)
+            lifetime_energy = (residence_blueprint.base_energy_need + average_heating_energy) * rounds_left
+
+            co2 = 0.03 * residence_blueprint.max_pop * rounds_left + residence_blueprint.co2_cost + (0.1 * lifetime_energy / 1000)
+            max_happiness = residence_blueprint.max_happiness * rounds_left
+
+            score = residence_blueprint.max_pop*15 + max_happiness/10 - co2
+            best_residence.append((score, residence_blueprint.building_name))
+
+    def sort_key(e):
+        return e[0]
+    best_residence.sort(reverse=True, key=sort_key)
+    if not best_residence:
+        return False
+    return best_residence[0]
 
 
 def chart_map():
