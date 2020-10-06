@@ -235,7 +235,7 @@ def get_best_upgrade():
 
 
 def calculate_best_upgrade(current_building):
-    global state
+    global state, money_reserve_multiplier
 
     rounds_left = 700 - state.turn
     current_pop = current_building.current_pop
@@ -271,7 +271,7 @@ def calculate_best_upgrade(current_building):
 
 
 def calculate_best_residence():
-    global state
+    global state, money_reserve_multiplier
 
     rounds_left = 700 - state.turn
     best_residence = []
@@ -323,7 +323,6 @@ def optimize_available_tiles():
     score_list.sort(key=sort_key)
     for i in range(len(score_list)):
         available_tiles[i] = score_list[i][1]
-    print("average x,y: " + str(average_x) + ", " + str(average_y))
 
 
 def adjust_energy(current_building):
@@ -354,7 +353,6 @@ def adjust_energy(current_building):
 
 def build(structure):
     global building_under_construction, rounds_between_energy, state
-    # print("Building " + structure)
     for i in range(len(available_tiles)):
         if isinstance(available_tiles[i], tuple):
             game_layer.place_foundation(available_tiles[i], structure)
