@@ -20,11 +20,11 @@ temp_acc_multiplier = 1.125
 
 # vars
 EMA_temp = None
-rounds_between_energy = None
+rounds_between_energy = 5
 building_under_construction = None
-available_tiles = None
+available_tiles = []
 state = None
-queue_timeout = None
+queue_timeout = 1
 edit_temp = None
 maintain = None
 
