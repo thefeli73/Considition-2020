@@ -19,14 +19,14 @@ money_reserve_multiplier = 0
 temp_acc_multiplier = 1.125
 
 # vars
-EMA_temp = none
-rounds_between_energy = none
-building_under_construction = none
-available_tiles = none
-state = none
-queue_timeout = none
-edit_temp = none
-maintain = none
+EMA_temp = None
+rounds_between_energy = None
+building_under_construction = None
+available_tiles = None
+state = None
+queue_timeout = None
+edit_temp = None
+maintain = None
 
 
 def main():
