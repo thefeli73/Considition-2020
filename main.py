@@ -15,7 +15,7 @@ game_layer = GameLayer(api_key)
 use_regulator = False
 other_upgrade_threshold = 0.25
 time_until_run_ends = 90
-money_reserve_multiplier = 1
+money_reserve_multiplier = 0.1
 
 
 def main():
@@ -334,7 +334,7 @@ def tile_score(tile, radius):
         delta_x = abs(tile[0] - residence.X)
         delta_y = abs(tile[1] - residence.Y)
         distance = delta_x + delta_y
-        if distance <= radius:
+        if (distance <= radius) and not ("Park", "WindTurbine", "Mall.2" in residence.effects):
             affected_people += residence.current_pop
             affected_buildings += 1
     return affected_people, affected_buildings
