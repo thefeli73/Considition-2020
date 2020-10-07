@@ -418,6 +418,13 @@ def build_place(structure, i):
     global building_under_construction, rounds_between_energy, state
     if isinstance(available_tiles[i], tuple):
         game_layer.place_foundation(available_tiles[i], structure)
+        for j in range(len(state.residences)):
+            building = state.residences[j]
+            coords_to_check = (building.X, building.Y)
+            if coords_to_check == available_tiles[i]:
+                available_tiles[i] = building
+                building_under_construction = (building.X, building.Y, j)
+                return True
         for j in range(len(state.utilities)):
             building = state.utilities[j]
             coords_to_check = (building.X, building.Y)
@@ -433,25 +440,22 @@ def build(structure):
     for i in range(len(available_tiles)):
         if isinstance(available_tiles[i], tuple):
             game_layer.place_foundation(available_tiles[i], structure)
-            for building in state.available_residence_buildings:
-                if structure in building.building_name:
-                    for j in range(len(state.residences)):
-                        building = state.residences[j]
-                        coords_to_check = (building.X, building.Y)
-                        if coords_to_check == available_tiles[i]:
-                            available_tiles[i] = building
-                            building_under_construction = (building.X, building.Y, j)
-                            rounds_between_energy = len(state.residences)+2
-                            return True
-            for building in state.available_utility_buildings:
-                if structure in building.building_name:
-                    for j in range(len(state.utilities)):
-                        building = state.utilities[j]
-                        coords_to_check = (building.X, building.Y)
-                        if coords_to_check == available_tiles[i]:
-                            available_tiles[i] = building
-                            building_under_construction = (building.X, building.Y, j)
-                            return True
+            for j in range(len(state.residences)):
+                building = state.residences[j]
+                coords_to_check = (building.X, building.Y)
+                if coords_to_check == available_tiles[i]:
+                    available_tiles[i] = building
+                    building_under_construction = (building.X, building.Y, j)
+                    rounds_between_energy = len(state.residences)+2
+                    return True
+            for j in range(len(state.utilities)):
+                building = state.utilities[j]
+                coords_to_check = (building.X, building.Y)
+                if coords_to_check == available_tiles[i]:
+                    available_tiles[i] = building
+                    building_under_construction = (building.X, building.Y, j)
+                    return True
+            return False
     return False
 
 
