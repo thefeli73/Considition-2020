@@ -14,8 +14,7 @@ game_layer = GameLayer(api_key)
 # settings
 use_regulator = False
 other_upgrade_threshold = 0.25
-time_until_run_ends = 70
-utilities = 3
+time_until_run_ends = 90
 money_reserve_multiplier = 1
 
 
@@ -76,32 +75,32 @@ def take_turn():
 
 
 def develop_society():
-    global state, queue_timeout, available_tiles, utilities, money_reserve_multiplier
-    queue_reset = 10
+    global state, queue_timeout, available_tiles, money_reserve_multiplier
+    queue_reset = 5
     if queue_timeout > 1:
         queue_timeout -= 1
 
     best_residence = calculate_best_residence()
+    best_utility = calculate_best_utility()
     best_upgrade = get_best_upgrade()
     build_residence_score = 0
+    build_utility_score = 0
     build_upgrade_score = 0
     # priority scores, 1 = very urgent, 0 = not urgent at all
-    # queue modifier * funds modifier * existing houses modifier
-    # build_residence_score = (state.housing_queue / (15 * queue_timeout)) * (state.funds/(money_reserve_multiplier * 18000)) * (1 - (len(state.residences) / (1 + len(available_tiles) - utilities)))
     if len(state.residences) < 1:
-        build_residence_score = 100
-    elif state.housing_queue < 5:
+        build_residence_score = 1000
+    elif (current_tot_pop() - max_tot_pop() + state.housing_queue) < 0:
         build_residence_score = 0
+    elif (current_tot_pop() - max_tot_pop() + state.housing_queue) > 15 and queue_timeout <= 0:
+        build_residence_score = 1000
     elif best_residence:
         build_residence_score = best_residence[0] # * (state.housing_queue / (15 * queue_timeout))
-    elif state.housing_queue > 15 and queue_timeout <= 0:
-        build_residence_score = 100
     #
     upgrade_residence_score = 0
-    # existing houses modifier * funds modifier * existing utilities modifier
-    build_utility_score = (len(state.residences) / (1 + len(available_tiles)-utilities)) * (1 - (16000 / (1 + state.funds))) * (1 - (len(state.utilities) / utilities))
-    # turn modifier * funds modifier
-    # build_upgrade_score = (1 - (state.turn / 700)) * (state.funds/(money_reserve_multiplier * 7200))
+    #
+    if best_utility:
+        build_utility_score = best_utility[0]
+    #
     if best_upgrade:
         build_upgrade_score = best_upgrade[0]
 
@@ -115,15 +114,16 @@ def develop_society():
     def sort_key(e):
         return e[1]
     decision.sort(reverse=True, key=sort_key)
-    print(decision)
+    # print(decision)
+
     if decision[0][1] >= 0:
         if decision[0][0] == "build_residence":  # build housing
-            queue_timeout = queue_reset
             if best_residence:
+                queue_timeout = queue_reset
                 return build(best_residence[1])
         if decision[0][0] == "build_utility":  # build utilities
-            #return build("WindTurbine")
-            pass
+            if best_utility:
+                return build_place(best_utility[1], best_utility[2])
         if decision[0][0] == "upgrade_residence":  # upgrade housing
             pass
         if decision[0][0] == "build_upgrade":  # build upgrades
@@ -168,7 +168,7 @@ def something_needs_attention():
             return True
         elif (len(state.utilities)-1 >= building_under_construction[2]) and (state.utilities[building_under_construction[2]].build_progress < 100):
             game_layer.build((building_under_construction[0], building_under_construction[1]))
-            if not state.residences[building_under_construction[2]].build_progress < 100:
+            if not state.utilities[building_under_construction[2]].build_progress < 100:
                 building_under_construction = None
             return True
         else:
@@ -176,6 +176,22 @@ def something_needs_attention():
             return False
     else:
         return False
+
+
+def max_tot_pop():
+    global state
+    max_pop = 0
+    for residence in state.residences:
+        max_pop += game_layer.get_blueprint(residence.building_name).max_pop
+    return max_pop
+
+
+def current_tot_pop():
+    global state
+    current_pop = 0
+    for residence in state.residences:
+        current_pop += residence.current_pop
+    return current_pop
 
 
 def total_income():
@@ -231,6 +247,7 @@ def calculate_best_upgrade(current_building):
             max_happiness = effect.max_happiness_increase * current_pop * rounds_left
 
             score = max_happiness/10 - co2
+            # score = score / upgrade.cost
             best_upgrade.append((score, upgrade.name))
 
     def sort_key(e):
@@ -239,6 +256,38 @@ def calculate_best_upgrade(current_building):
     if not best_upgrade:
         return False
     return best_upgrade[0]
+
+
+def calculate_best_utility():
+    global state, money_reserve_multiplier
+
+    rounds_left = 700 - state.turn
+    best_utility = []
+    for utility_blueprint in state.available_utility_buildings:
+        if state.turn >= utility_blueprint.release_tick and (money_reserve_multiplier*utility_blueprint.cost < state.funds):
+            for i in range(len(available_tiles)):
+                if isinstance(available_tiles[i], tuple):
+                    score = 0
+                    cost = utility_blueprint.cost
+                    for effect_name in utility_blueprint.effects:
+                        effect = game_layer.get_effect(effect_name)
+                        affected_people = tile_score(available_tiles[i], effect.radius)[0]
+                        affected_buildings = tile_score(available_tiles[i], effect.radius)[1]
+                        cost -= effect.building_income_increase * rounds_left
+                        happiness_increase = affected_people * effect.max_happiness_increase * rounds_left
+                        co2 = affected_people * effect.co2_per_pop_increase * rounds_left - effect.mwh_production * affected_buildings
+                        score = happiness_increase / 10 - co2
+                    # score = score / cost
+                    best_utility.append((score, utility_blueprint.building_name, i))
+
+
+
+    def sort_key(e):
+        return e[0]
+    best_utility.sort(reverse=True, key=sort_key)
+    if not best_utility:
+        return False
+    return best_utility[0]
 
 
 def calculate_best_residence():
@@ -256,6 +305,7 @@ def calculate_best_residence():
             max_happiness = residence_blueprint.max_happiness * residence_blueprint.max_pop * rounds_left
 
             score = residence_blueprint.max_pop*15 + max_happiness/10 - co2
+            # score = score / residence_blueprint.cost
             best_residence.append((score, residence_blueprint.building_name))
 
     def sort_key(e):
@@ -273,6 +323,21 @@ def chart_map():
             if state.map[x][y] == 0:
                 available_tiles.append((x, y))
     optimize_available_tiles()
+
+
+def tile_score(tile, radius):
+    global state
+    affected_people = 0
+    affected_buildings = 0
+    # send back # of max people in radius
+    for residence in state.residences:
+        delta_x = abs(tile[0] - residence.X)
+        delta_y = abs(tile[1] - residence.Y)
+        distance = delta_x + delta_y
+        if distance <= radius:
+            affected_people += residence.current_pop
+            affected_buildings += 1
+    return affected_people, affected_buildings
 
 
 def optimize_available_tiles():
@@ -322,6 +387,32 @@ def adjust_energy(current_building):
         return False
 
 
+def build_place(structure, i):
+    global building_under_construction, rounds_between_energy, state
+    if isinstance(available_tiles[i], tuple):
+        game_layer.place_foundation(available_tiles[i], structure)
+        for building in state.available_residence_buildings:
+            if structure in building.building_name:
+                for j in range(len(state.residences)):
+                    building = state.residences[j]
+                    coords_to_check = (building.X, building.Y)
+                    if coords_to_check == available_tiles[i]:
+                        available_tiles[i] = building
+                        building_under_construction = (building.X, building.Y, j)
+                        rounds_between_energy = len(state.residences)+2
+                        return True
+        for building in state.available_utility_buildings:
+            if structure in building.building_name:
+                for j in range(len(state.utilities)):
+                    building = state.utilities[j]
+                    coords_to_check = (building.X, building.Y)
+                    if coords_to_check == available_tiles[i]:
+                        available_tiles[i] = building
+                        building_under_construction = (building.X, building.Y, j)
+                        return True
+            return False
+
+
 def build(structure):
     global building_under_construction, rounds_between_energy, state
     for i in range(len(available_tiles)):
@@ -345,7 +436,6 @@ def build(structure):
                         if coords_to_check == available_tiles[i]:
                             available_tiles[i] = building
                             building_under_construction = (building.X, building.Y, j)
-                            rounds_between_energy = len(state.residences)+2
                             return True
             return False
 
