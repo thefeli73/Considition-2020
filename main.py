@@ -262,30 +262,31 @@ def calculate_best_upgrade(current_building):
 def calculate_best_utility():
     global state, money_reserve_multiplier
 
-    rounds_left = 700 - state.turn
     best_utility = []
     for utility_blueprint in state.available_utility_buildings:
         if state.turn >= utility_blueprint.release_tick and (money_reserve_multiplier*utility_blueprint.cost < state.funds):
+            rounds_left = 700 - state.turn - (100 / utility_blueprint.build_speed)
+
             for i in range(len(available_tiles)):
                 if isinstance(available_tiles[i], tuple):
                     score = 0
                     cost = utility_blueprint.cost
                     for effect_name in utility_blueprint.effects:
                         effect = game_layer.get_effect(effect_name)
-                        affected_people = tile_score(available_tiles[i], effect.radius)[0]
-                        affected_buildings = tile_score(available_tiles[i], effect.radius)[1]
+                        affected_people = tile_score(available_tiles[i], effect.radius, effect_name)[0]
+                        affected_buildings = tile_score(available_tiles[i], effect.radius, effect_name)[1]
                         cost -= effect.building_income_increase * rounds_left
                         happiness_increase = affected_people * effect.max_happiness_increase * rounds_left
-                        co2 = affected_people * effect.co2_per_pop_increase * rounds_left - effect.mwh_production * affected_buildings
-                        score = happiness_increase / 10 - co2
+                        co2 = affected_people * effect.co2_per_pop_increase * rounds_left - effect.mwh_production * affected_buildings * rounds_left
+                        score += happiness_increase / 10 - co2
+                        # print(effect_name + " gave score " + str(score))
                     # score = score / cost
                     best_utility.append((score, utility_blueprint.building_name, i))
-
-
 
     def sort_key(e):
         return e[0]
     best_utility.sort(reverse=True, key=sort_key)
+    # print(best_utility)
     if not best_utility:
         return False
     return best_utility[0]
@@ -294,18 +295,30 @@ def calculate_best_utility():
 def calculate_best_residence():
     global state, money_reserve_multiplier
 
-    rounds_left = 700 - state.turn
     best_residence = []
     for residence_blueprint in state.available_residence_buildings:
         if state.turn >= residence_blueprint.release_tick and (money_reserve_multiplier*residence_blueprint.cost < state.funds):
+            rounds_left = 700 - state.turn - (100 / residence_blueprint.build_speed)
+
             average_outdoor_temp = (state.max_temp - state.min_temp)/2
             average_heating_energy = ((0 - 0.04 * residence_blueprint.max_pop + (21 - average_outdoor_temp) * residence_blueprint.emissivity) / 0.75)
             lifetime_energy = (residence_blueprint.base_energy_need + average_heating_energy) * rounds_left
 
+            distinct_residences = number_of_distinct_residences(residence_blueprint.building_name)
+            diversity = 1 + distinct_residences[0]/10
+
             co2 = 0.03 * residence_blueprint.max_pop * rounds_left + residence_blueprint.co2_cost + (0.1 * lifetime_energy / 1000)
             max_happiness = residence_blueprint.max_happiness * residence_blueprint.max_pop * rounds_left
+            max_happiness *= diversity
 
-            score = residence_blueprint.max_pop*15 + max_happiness/10 - co2
+            diversity_bonus = 0
+            if distinct_residences[1]:
+                happy = 0
+                for residence in state.residences:
+                    happy += residence.happiness_per_tick_per_pop * residence.current_pop
+                diversity_bonus = (happy * rounds_left / 10) / 10
+
+            score = residence_blueprint.max_pop*15 + max_happiness / 10 - co2 + diversity_bonus
             # score = score / residence_blueprint.cost
             best_residence.append((score, residence_blueprint.building_name))
 
@@ -315,6 +328,18 @@ def calculate_best_residence():
     if not best_residence:
         return False
     return best_residence[0]
+
+
+def number_of_distinct_residences(new_building):
+    global state
+    unique_names = []
+    for residence in state.residences:
+        if not residence.building_name in unique_names:
+            unique_names.append(residence.building_name)
+    if not new_building in unique_names:
+        unique_names.append(new_building)
+        return len(unique_names), True
+    return len(unique_names), False
 
 
 def chart_map():
