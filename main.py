@@ -5,15 +5,18 @@ from sys import exit
 from game_layer import GameLayer
 import game_state
 import traceback
+import random
 
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 # The different map names can be found on considition.com/rules
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 game_layer = GameLayer(api_key)
 # settings
+use_regulator = False
+other_upgrade_threshold = 0.25
 time_until_run_ends = 70
 utilities = 3
-money_reserve_multiplier = 1.5
+money_reserve_multiplier = 1
 
 
 def main():
@@ -73,22 +76,35 @@ def take_turn():
 
 
 def develop_society():
-    global state, queue_timeout, available_tiles, utilities
+    global state, queue_timeout, available_tiles, utilities, money_reserve_multiplier
+    queue_reset = 10
     if queue_timeout > 1:
         queue_timeout -= 1
 
-
+    best_residence = calculate_best_residence()
+    best_upgrade = get_best_upgrade()
+    build_residence_score = 0
+    build_upgrade_score = 0
     # priority scores, 1 = very urgent, 0 = not urgent at all
     # queue modifier * funds modifier * existing houses modifier
-    build_residence_score = (state.housing_queue / (15 * queue_timeout)) * (1 - (7500 / (1 + state.funds))) * (1 - (len(state.residences) / (1 + len(available_tiles) - utilities)))
+    # build_residence_score = (state.housing_queue / (15 * queue_timeout)) * (state.funds/(money_reserve_multiplier * 18000)) * (1 - (len(state.residences) / (1 + len(available_tiles) - utilities)))
+    if len(state.residences) < 1:
+        build_residence_score = 100
+    elif state.housing_queue < 5:
+        build_residence_score = 0
+    elif best_residence:
+        build_residence_score = best_residence[0] # * (state.housing_queue / (15 * queue_timeout))
+    elif state.housing_queue > 15 and queue_timeout <= 0:
+        build_residence_score = 100
+    #
     upgrade_residence_score = 0
     # existing houses modifier * funds modifier * existing utilities modifier
     build_utility_score = (len(state.residences) / (1 + len(available_tiles)-utilities)) * (1 - (16000 / (1 + state.funds))) * (1 - (len(state.utilities) / utilities))
     # turn modifier * funds modifier
-    build_upgrade_score = (1 - (state.turn / 700)) * (2 - (15000 / (1 + state.funds)))
+    # build_upgrade_score = (1 - (state.turn / 700)) * (state.funds/(money_reserve_multiplier * 7200))
+    if best_upgrade:
+        build_upgrade_score = best_upgrade[0]
 
-    if len(state.residences) < 1:
-        build_residence_score = 100
 
     decision = [
         ('build_residence', build_residence_score),
@@ -99,35 +115,29 @@ def develop_society():
     def sort_key(e):
         return e[1]
     decision.sort(reverse=True, key=sort_key)
-
-    for i in range(4):
+    print(decision)
+    if decision[0][1] >= 0:
         if decision[0][0] == "build_residence":  # build housing
-            queue_timeout = 5
-            #if len(state.residences) < len(state.available_residence_buildings):
-            #    return build(state.available_residence_buildings[len(state.residences)].building_name)
-            #else:
-            cbr = calculate_best_residence()
-            if cbr:
-                return build(cbr[1])
+            queue_timeout = queue_reset
+            if best_residence:
+                return build(best_residence[1])
         if decision[0][0] == "build_utility":  # build utilities
             #return build("WindTurbine")
             pass
-        if decision[0][0] == "upgrade_residence":  # build utilities
+        if decision[0][0] == "upgrade_residence":  # upgrade housing
             pass
         if decision[0][0] == "build_upgrade":  # build upgrades
-            for residence in state.residences:
-                if state.available_upgrades[0].name not in residence.effects and (money_reserve_multiplier*3500 < state.funds) and ((total_income() - 6) > 50):
-                    game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[0].name)
-                    return True
-                if state.available_upgrades[5].name not in residence.effects and (money_reserve_multiplier*1250 < state.funds):
-                    game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[5].name)
-                    return True
-            gbp = get_best_upgrade()
-            if gbp:
-                game_layer.buy_upgrade((gbp[2].X, gbp[2].Y), gbp[1])
+            if random.random() < other_upgrade_threshold:
+                for residence in state.residences:
+                    if state.available_upgrades[0].name not in residence.effects and (money_reserve_multiplier*3500 < state.funds) and ((total_income() - 6) > 50):
+                        game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[0].name)
+                        return True
+                    if use_regulator and state.available_upgrades[5].name not in residence.effects and (money_reserve_multiplier*1250 < state.funds):
+                        game_layer.buy_upgrade((residence.X, residence.Y), state.available_upgrades[5].name)
+                        return True
+            if best_upgrade:
+                game_layer.buy_upgrade((best_upgrade[2].X, best_upgrade[2].Y), best_upgrade[1])
                 return True
-        del decision[0]
-
     return False
 
 
@@ -218,7 +228,7 @@ def calculate_best_upgrade(current_building):
             upgrade_co2 = (effect.co2_per_pop_increase * 0.03) * current_pop * rounds_left + (0.1 * lifetime_energy / 1000)
             old_co2 = 0.03 * current_pop * rounds_left + (0.1 * old_lifetime_energy / 1000)
             co2 = upgrade_co2 - old_co2
-            max_happiness = effect.max_happiness_increase * rounds_left
+            max_happiness = effect.max_happiness_increase * current_pop * rounds_left
 
             score = max_happiness/10 - co2
             best_upgrade.append((score, upgrade.name))
@@ -243,7 +253,7 @@ def calculate_best_residence():
             lifetime_energy = (residence_blueprint.base_energy_need + average_heating_energy) * rounds_left
 
             co2 = 0.03 * residence_blueprint.max_pop * rounds_left + residence_blueprint.co2_cost + (0.1 * lifetime_energy / 1000)
-            max_happiness = residence_blueprint.max_happiness * rounds_left
+            max_happiness = residence_blueprint.max_happiness * residence_blueprint.max_pop * rounds_left
 
             score = residence_blueprint.max_pop*15 + max_happiness/10 - co2
             best_residence.append((score, residence_blueprint.building_name))
