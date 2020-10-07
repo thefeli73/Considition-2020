@@ -18,6 +18,16 @@ time_until_run_ends = 90
 money_reserve_multiplier = 0
 temp_acc_multiplier = 1.125
 
+# vars
+EMA_temp = none
+rounds_between_energy = none
+building_under_construction = none
+available_tiles = none
+state = none
+queue_timeout = none
+edit_temp = none
+maintain = none
+
 
 def main():
     global EMA_temp, rounds_between_energy, building_under_construction, available_tiles, state, queue_timeout
@@ -95,7 +105,7 @@ def develop_society():
     elif (current_tot_pop() - max_tot_pop() + state.housing_queue) > 15 and queue_timeout <= 0:
         build_residence_score = 1000
     elif best_residence:
-        build_residence_score = best_residence[0] # * (state.housing_queue / (15 * queue_timeout))
+        build_residence_score = best_residence[0]
     #
     upgrade_residence_score = 0
     #
@@ -105,13 +115,13 @@ def develop_society():
     if best_upgrade:
         build_upgrade_score = best_upgrade[0]
 
-
     decision = [
         ('build_residence', build_residence_score),
         ('upgrade_residence', upgrade_residence_score),
         ('build_utility', build_utility_score),
         ('build_upgrade', build_upgrade_score)
     ]
+
     def sort_key(e):
         return e[1]
     decision.sort(reverse=True, key=sort_key)
@@ -142,7 +152,6 @@ def develop_society():
     return False
 
 
-
 def something_needs_attention():
     global building_under_construction, edit_temp, maintain, state, rounds_between_energy
 
@@ -152,7 +161,7 @@ def something_needs_attention():
     maintain = (False, 0)
     for i in range(len(state.residences)):
         blueprint = game_layer.get_residence_blueprint(state.residences[i].building_name)
-        if state.residences[i].health < 40+(max(((blueprint.maintenance_cost- state.funds) / (1+total_income())), 1) * blueprint.decay_rate):
+        if state.residences[i].health < 40+(max(((blueprint.maintenance_cost - state.funds) / (1+total_income())), 1) * blueprint.decay_rate):
             maintain = (True, i)
         if (state.turn % rounds_between_energy == i) and not state.residences[i].build_progress < 100:
             edit_temp = (True, i)
@@ -241,7 +250,6 @@ def calculate_best_upgrade(current_building):
 
             lifetime_energy = (base_energy_need + effect.base_energy_mwh_increase + average_heating_energy - effect.mwh_production) * rounds_left
             old_lifetime_energy = (base_energy_need + old_average_heating_energy) * rounds_left
-
 
             upgrade_co2 = (effect.co2_per_pop_increase * 0.03) * current_pop * rounds_left + (0.1 * lifetime_energy / 1000)
             old_co2 = 0.03 * current_pop * rounds_left + (0.1 * old_lifetime_energy / 1000)
@@ -335,9 +343,9 @@ def number_of_distinct_residences(new_building):
     global state
     unique_names = []
     for residence in state.residences:
-        if not residence.building_name in unique_names:
+        if residence.building_name not in unique_names:
             unique_names.append(residence.building_name)
-    if not new_building in unique_names:
+    if new_building not in unique_names:
         unique_names.append(new_building)
         return len(unique_names), True
     return len(unique_names), False
@@ -361,14 +369,13 @@ def tile_score(tile, radius, effect):
         delta_x = abs(tile[0] - residence.X)
         delta_y = abs(tile[1] - residence.Y)
         distance = delta_x + delta_y
-        if (distance <= radius) and not effect in residence.effects:
+        if (distance <= radius) and effect not in residence.effects:
             affected_people += residence.current_pop
             affected_buildings += 1
     return affected_people, affected_buildings
 
 
 def optimize_available_tiles():
-    global average_x, average_y, score_list
     average_x = 0
     average_y = 0
     score_list = []
@@ -399,15 +406,15 @@ def adjust_energy(current_building):
     if "Insulation" in current_building.effects:
         emissivity *= 0.6
 
-    outDoorTemp = state.current_temp * 2 - EMA_temp
-    temp_acceleration = (2*(21 - current_building.temperature)/(rounds_between_energy)) * temp_acc_multiplier
+    out_door_temp = state.current_temp * 2 - EMA_temp
+    temp_acceleration = (2*(21 - current_building.temperature)/rounds_between_energy) * temp_acc_multiplier
 
-    effectiveEnergyIn = ((temp_acceleration - 0.04 * current_building.current_pop + (current_building.temperature - outDoorTemp) * emissivity) / 0.75) + base_energy
+    effective_energy_in = ((temp_acceleration - 0.04 * current_building.current_pop + (current_building.temperature - out_door_temp) * emissivity) / 0.75) + base_energy
 
-    if effectiveEnergyIn > base_energy:
-        game_layer.adjust_energy_level((current_building.X, current_building.Y), effectiveEnergyIn)
+    if effective_energy_in > base_energy:
+        game_layer.adjust_energy_level((current_building.X, current_building.Y), effective_energy_in)
         return True
-    elif effectiveEnergyIn < base_energy:
+    elif effective_energy_in < base_energy:
         game_layer.adjust_energy_level((current_building.X, current_building.Y), base_energy + 0.01)
         return True
     else:
