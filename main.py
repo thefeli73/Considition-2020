@@ -15,7 +15,7 @@ game_layer = GameLayer(api_key)
 use_regulator = False
 other_upgrade_threshold = 0.25
 time_until_run_ends = 90
-money_reserve_multiplier = 0.1
+money_reserve_multiplier = 0
 
 
 def main():
@@ -76,7 +76,7 @@ def take_turn():
 
 def develop_society():
     global state, queue_timeout, available_tiles, money_reserve_multiplier
-    queue_reset = 5
+    queue_reset = 1
     if queue_timeout > 1:
         queue_timeout -= 1
 
