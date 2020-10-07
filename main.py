@@ -150,7 +150,8 @@ def something_needs_attention():
     # check if need for maintenance
     maintain = (False, 0)
     for i in range(len(state.residences)):
-        if state.residences[i].health < 35+rounds_between_energy*game_layer.get_residence_blueprint(state.residences[i].building_name).decay_rate:
+        blueprint = game_layer.get_residence_blueprint(state.residences[i].building_name)
+        if state.residences[i].health < 40+(max(((blueprint.maintenance_cost- state.funds) / (1+total_income())), 1) * blueprint.decay_rate):
             maintain = (True, i)
         if (state.turn % rounds_between_energy == i) and not state.residences[i].build_progress < 100:
             edit_temp = (True, i)
