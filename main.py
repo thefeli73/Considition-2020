@@ -16,6 +16,7 @@ use_regulator = False
 other_upgrade_threshold = 0.25
 time_until_run_ends = 90
 money_reserve_multiplier = 0
+temp_acc_multiplier = 1.125
 
 
 def main():
@@ -388,7 +389,7 @@ def optimize_available_tiles():
 
 
 def adjust_energy(current_building):
-    global rounds_between_energy, EMA_temp, state
+    global rounds_between_energy, EMA_temp, state, temp_acc_multiplier
     blueprint = game_layer.get_residence_blueprint(current_building.building_name)
     base_energy = blueprint.base_energy_need
     if "Charger" in current_building.effects:
@@ -399,7 +400,7 @@ def adjust_energy(current_building):
         emissivity *= 0.6
 
     outDoorTemp = state.current_temp * 2 - EMA_temp
-    temp_acceleration = (2*(21 - current_building.temperature)/(rounds_between_energy))
+    temp_acceleration = (2*(21 - current_building.temperature)/(rounds_between_energy)) * temp_acc_multiplier
 
     effectiveEnergyIn = ((temp_acceleration - 0.04 * current_building.current_pop + (current_building.temperature - outDoorTemp) * emissivity) / 0.75) + base_energy
 
