@@ -326,7 +326,7 @@ def chart_map():
     optimize_available_tiles()
 
 
-def tile_score(tile, radius):
+def tile_score(tile, radius, effect):
     global state
     affected_people = 0
     affected_buildings = 0
@@ -335,7 +335,7 @@ def tile_score(tile, radius):
         delta_x = abs(tile[0] - residence.X)
         delta_y = abs(tile[1] - residence.Y)
         distance = delta_x + delta_y
-        if (distance <= radius) and not ("Park", "WindTurbine", "Mall.2" in residence.effects):
+        if (distance <= radius) and not effect in residence.effects:
             affected_people += residence.current_pop
             affected_buildings += 1
     return affected_people, affected_buildings
