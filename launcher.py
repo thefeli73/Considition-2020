@@ -1,7 +1,6 @@
 import main
-import time
+import clearGames
 from multiprocessing import Pool
-import multiprocessing
 
 proc_running = 4  # MAX 4!!!
 
@@ -18,6 +17,7 @@ def launch(list):
 
 
 if __name__ == '__main__':
+    clearGames.clear_it()
     with Pool(proc_running) as p:
         results = p.map(run_main, range(proc_running))
     launch(results)
