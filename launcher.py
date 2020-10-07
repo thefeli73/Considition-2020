@@ -13,7 +13,6 @@ def run_main(n):
 def launch(list):
     for result in list:
         print("Game " + result[0] + " had a score of: " + str(result[1]))
-    input("Press Enter to exit")
 
 
 if __name__ == '__main__':
