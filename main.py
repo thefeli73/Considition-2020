@@ -12,15 +12,16 @@ api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 game_layer = GameLayer(api_key)
 # settings
-use_regulator = False
+use_regulator = True
 other_upgrade_threshold = 0.25
 time_until_run_ends = 90
 money_reserve_multiplier = 0
 temp_acc_multiplier = 1.125
+rounds_between_energy = 5
+round_buffer = 0
 
 # vars
 EMA_temp = None
-rounds_between_energy = 5
 building_under_construction = None
 available_tiles = []
 state = None
@@ -259,7 +260,8 @@ def calculate_best_upgrade(current_building):
             old_co2 = 0.03 * current_pop * rounds_left + (0.1 * old_lifetime_energy / 1000)
             co2 = upgrade_co2 - old_co2
             max_happiness = effect.max_happiness_increase * current_pop * rounds_left
-
+            if "Charger" in current_building.effects and upgrade.name == "Mall.2":
+                co2 = 0
             score = max_happiness/10 - co2
             # score = score / upgrade.cost
             best_upgrade.append((score, upgrade.name))
@@ -273,12 +275,12 @@ def calculate_best_upgrade(current_building):
 
 
 def calculate_best_utility():
-    global state, money_reserve_multiplier
+    global state, money_reserve_multiplier, round_buffer
 
     best_utility = []
     for utility_blueprint in state.available_utility_buildings:
         if state.turn >= utility_blueprint.release_tick and (money_reserve_multiplier*utility_blueprint.cost < state.funds):
-            rounds_left = 700 - state.turn - (100 / utility_blueprint.build_speed)
+            rounds_left = 700 - state.turn - (100 / utility_blueprint.build_speed) - round_buffer
 
             for i in range(len(available_tiles)):
                 if isinstance(available_tiles[i], tuple):
@@ -306,12 +308,12 @@ def calculate_best_utility():
 
 
 def calculate_best_residence():
-    global state, money_reserve_multiplier
+    global state, money_reserve_multiplier, round_buffer
 
     best_residence = []
     for residence_blueprint in state.available_residence_buildings:
         if state.turn >= residence_blueprint.release_tick and (money_reserve_multiplier*residence_blueprint.cost < state.funds):
-            rounds_left = 700 - state.turn - (100 / residence_blueprint.build_speed)
+            rounds_left = 700 - state.turn - (100 / residence_blueprint.build_speed) - round_buffer
 
             average_outdoor_temp = (state.max_temp - state.min_temp)/2
             average_heating_energy = ((0 - 0.04 * residence_blueprint.max_pop + (21 - average_outdoor_temp) * residence_blueprint.emissivity) / 0.75)
@@ -455,7 +457,7 @@ def build_place(structure, i):
             if coords_to_check == available_tiles[i]:
                 available_tiles[i] = building
                 building_under_construction = (building.X, building.Y, j)
-                rounds_between_energy = len(state.residences)+2
+                rounds_between_energy = len(state.residences)+1
                 return True
         for j in range(len(state.utilities)):
             building = state.utilities[j]
@@ -478,7 +480,7 @@ def build(structure):
                 if coords_to_check == available_tiles[i]:
                     available_tiles[i] = building
                     building_under_construction = (building.X, building.Y, j)
-                    rounds_between_energy = len(state.residences)+2
+                    rounds_between_energy = len(state.residences)+1
                     return True
             for j in range(len(state.utilities)):
                 building = state.utilities[j]
