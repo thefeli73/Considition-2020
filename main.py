@@ -18,7 +18,7 @@ time_until_run_ends = 90
 money_reserve_multiplier = 0
 temp_acc_multiplier = 1.125
 rounds_between_energy = 5
-round_buffer = 0
+round_buffer = 78
 
 # vars
 EMA_temp = None
@@ -457,7 +457,7 @@ def build_place(structure, i):
             if coords_to_check == available_tiles[i]:
                 available_tiles[i] = building
                 building_under_construction = (building.X, building.Y, j)
-                rounds_between_energy = len(state.residences)+1
+                rounds_between_energy = len(state.residences)+2
                 return True
         for j in range(len(state.utilities)):
             building = state.utilities[j]
@@ -480,7 +480,7 @@ def build(structure):
                 if coords_to_check == available_tiles[i]:
                     available_tiles[i] = building
                     building_under_construction = (building.X, building.Y, j)
-                    rounds_between_energy = len(state.residences)+1
+                    rounds_between_energy = len(state.residences)+2
                     return True
             for j in range(len(state.utilities)):
                 building = state.utilities[j]
