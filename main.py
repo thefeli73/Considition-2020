@@ -34,6 +34,7 @@ def main():
     # global vars
     rounds_between_energy = 5
     EMA_temp = None
+    ema_length = 16
     building_under_construction = None
     available_tiles = []
     queue_timeout = 1
@@ -50,7 +51,7 @@ def main():
         try:
             if EMA_temp is None:
                 EMA_temp = state.current_temp
-            ema_k_value = (2/(rounds_between_energy+1))
+            ema_k_value = (2/(ema_length+1))
             EMA_temp = state.current_temp * ema_k_value + EMA_temp*(1-ema_k_value)
             take_turn()
         except Exception:
