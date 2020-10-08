@@ -13,12 +13,12 @@ map_name = "training1"  # TODO: You map choice here. If left empty, the map "tra
 game_layer = GameLayer(api_key)
 # settings
 use_regulator = False  # turns on if map max temp >21c
-other_upgrade_threshold = 0.5
+other_upgrade_threshold = 0.9
 time_until_run_ends = 90
 money_reserve_multiplier = 0.5
 temp_acc_multiplier = 1.125
 rounds_between_energy = 5
-round_buffer = 78
+round_buffer = 10
 
 # vars
 EMA_temp = None
