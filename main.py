@@ -12,8 +12,8 @@ api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 game_layer = GameLayer(api_key)
 # settings
-use_regulator = True
-other_upgrade_threshold = 0.25
+use_regulator = False  # turns on if map max temp >21c
+other_upgrade_threshold = 0.5
 time_until_run_ends = 90
 money_reserve_multiplier = 0
 temp_acc_multiplier = 1.125
@@ -31,7 +31,7 @@ maintain = None
 
 
 def main():
-    global EMA_temp, rounds_between_energy, building_under_construction, available_tiles, state, queue_timeout
+    global EMA_temp, rounds_between_energy, building_under_construction, available_tiles, state, queue_timeout, use_regulator
     # global vars
     rounds_between_energy = 5
     EMA_temp = None
@@ -47,6 +47,8 @@ def main():
     start_time = time.time()
     state = game_layer.game_state
     chart_map()
+    if state.max_temp >21:
+        use_regulator = True
     while state.turn < state.max_turns:
         state = game_layer.game_state
         try:
