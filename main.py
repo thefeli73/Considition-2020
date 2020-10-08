@@ -256,12 +256,12 @@ def calculate_best_upgrade(current_building):
             lifetime_energy = (base_energy_need + effect.base_energy_mwh_increase + average_heating_energy - effect.mwh_production) * rounds_left
             old_lifetime_energy = (base_energy_need + old_average_heating_energy) * rounds_left
 
-            upgrade_co2 = (effect.co2_per_pop_increase * 0.03) * current_pop * rounds_left + (0.1 * lifetime_energy / 1000)
+            upgrade_co2 = (effect.co2_per_pop_increase + 0.03) * current_pop * rounds_left + (0.1 * lifetime_energy / 1000)
+            if "Mall.2" in current_building.effects and upgrade.name == "Charger":
+                upgrade_co2 = (effect.co2_per_pop_increase - 0.009 + 0.03) * current_pop * rounds_left + (0.1 * lifetime_energy / 1000)
             old_co2 = 0.03 * current_pop * rounds_left + (0.1 * old_lifetime_energy / 1000)
             co2 = upgrade_co2 - old_co2
             max_happiness = effect.max_happiness_increase * current_pop * rounds_left
-            if "Charger" in current_building.effects and upgrade.name == "Mall.2":
-                co2 = 0
             score = max_happiness/10 - co2
             # score = score / upgrade.cost
             best_upgrade.append((score, upgrade.name))
