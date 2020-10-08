@@ -125,13 +125,16 @@ def develop_society():
     def sort_key(e):
         return e[1]
     decision.sort(reverse=True, key=sort_key)
-    # print(decision)
+    print(decision)
 
     if decision[0][1] >= 0:
         if decision[0][0] == "build_residence":  # build housing
             if best_residence:
                 queue_timeout = queue_reset
-                return build(best_residence[1])
+                if best_residence[2]:
+                    return build_place(best_residence[1], best_residence[2])
+                else:
+                    return build(best_residence[1])
         if decision[0][0] == "build_utility":  # build utilities
             if best_utility:
                 return build_place(best_utility[1], best_utility[2])
@@ -329,7 +332,27 @@ def calculate_best_residence():
 
             score = residence_blueprint.max_pop*15 + max_happiness / 10 - co2 + diversity_bonus
             # score = score / residence_blueprint.cost
-            best_residence.append((score, residence_blueprint.building_name))
+
+            # calculate tiles near utils
+            best_foundation_tile = []
+            for i in range(len(available_tiles)):
+                tile = available_tiles[i]
+                if isinstance(tile, tuple):
+                    for utility in state.utilities:
+                        for effect_name in utility.effects:
+                            effect = game_layer.get_effect(effect_name)
+                            delta_x = abs(tile[0] - utility.X)
+                            delta_y = abs(tile[1] - utility.Y)
+                            distance = delta_x + delta_y
+                            if (distance <= effect.radius):
+                                best_foundation_tile.append((distance, i))
+            def sort_key(e):
+                return e[0]
+            best_foundation_tile.sort(key=sort_key)
+            if best_foundation_tile:
+                best_residence.append((score, residence_blueprint.building_name, best_foundation_tile[0][1]))
+            else:
+                best_residence.append((score, residence_blueprint.building_name, False))
 
     def sort_key(e):
         return e[0]
@@ -431,6 +454,7 @@ def build_place(structure, i):
             if coords_to_check == available_tiles[i]:
                 available_tiles[i] = building
                 building_under_construction = (building.X, building.Y, j)
+                rounds_between_energy = len(state.residences)+2
                 return True
         for j in range(len(state.utilities)):
             building = state.utilities[j]
