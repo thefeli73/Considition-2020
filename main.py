@@ -9,16 +9,19 @@ import random
 
 api_key = "74e3998d-ed3d-4d46-9ea8-6aab2efd8ae3"
 # The different map names can be found on considition.com/rules
-map_name = "training1"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
+map_name = "London"  # TODO: You map choice here. If left empty, the map "training1" will be selected.
 game_layer = GameLayer(api_key)
 # settings
-use_regulator = False  # turns on if map max temp >21c
+use_regulator = True  # turns on if map max temp >21c
 other_upgrade_threshold = 0.9
-time_until_run_ends = 90
+time_until_run_ends = 900
 money_reserve_multiplier = 0.5
 temp_acc_multiplier = 1.125
 rounds_between_energy = 5
 round_buffer = 10
+funds_multiplier = 5
+upgrade_multiply = 10
+rounds_between_energy_offset=3
 
 # vars
 EMA_temp = None
@@ -47,7 +50,7 @@ def main():
     start_time = time.time()
     state = game_layer.game_state
     chart_map()
-    if state.max_temp > 21:
+    if state.max_temp > 20:
         use_regulator = True
     while state.turn < state.max_turns:
         state = game_layer.game_state
@@ -131,6 +134,9 @@ def develop_society():
     decision.sort(reverse=True, key=sort_key)
     print(decision)
 
+    if state.turn == 0:
+        return build("Mall")
+
     if decision[0][1] >= 0:
         if decision[0][0] == "build_residence":  # build housing
             if best_residence:
@@ -156,6 +162,7 @@ def develop_society():
             if best_upgrade:
                 game_layer.buy_upgrade((best_upgrade[2].X, best_upgrade[2].Y), best_upgrade[1])
                 return True
+
     return False
 
 
@@ -240,7 +247,7 @@ def get_best_upgrade():
 
 
 def calculate_best_upgrade(current_building):
-    global state, money_reserve_multiplier
+    global state, money_reserve_multiplier, funds_multiplier, upgrade_multiply
 
     rounds_left = 700 - state.turn
     current_pop = current_building.current_pop
@@ -266,11 +273,16 @@ def calculate_best_upgrade(current_building):
             max_happiness = effect.max_happiness_increase * current_pop * rounds_left
             score = max_happiness/10 - co2
             # score = score / upgrade.cost
+            score += score + funds_multiplier * (effect.building_income_increase * (4.5 * effect.mwh_production / 1000) * rounds_left)  # money multiplier
+            score *= upgrade_multiply
+            #if (state.min_temp < -5 and upgrade.name == "Insulation"):
+            #    score = 1000
             best_upgrade.append((score, upgrade.name))
 
     def sort_key(e):
         return e[0]
     best_upgrade.sort(reverse=True, key=sort_key)
+    print(best_upgrade)
     if not best_upgrade:
         return False
     return best_upgrade[0]
@@ -450,7 +462,7 @@ def adjust_energy(current_building):
 
 
 def build_place(structure, i):
-    global building_under_construction, rounds_between_energy, state
+    global building_under_construction, rounds_between_energy, state, rounds_between_energy_offset
     if isinstance(available_tiles[i], tuple):
         game_layer.place_foundation(available_tiles[i], structure)
         for j in range(len(state.residences)):
@@ -459,7 +471,7 @@ def build_place(structure, i):
             if coords_to_check == available_tiles[i]:
                 available_tiles[i] = building
                 building_under_construction = (building.X, building.Y, j)
-                rounds_between_energy = len(state.residences)+2
+                rounds_between_energy = len(state.residences)+rounds_between_energy_offset
                 return True
         for j in range(len(state.utilities)):
             building = state.utilities[j]
@@ -482,7 +494,7 @@ def build(structure):
                 if coords_to_check == available_tiles[i]:
                     available_tiles[i] = building
                     building_under_construction = (building.X, building.Y, j)
-                    rounds_between_energy = len(state.residences)+2
+                    rounds_between_energy = len(state.residences)+rounds_between_energy_offset
                     return True
             for j in range(len(state.utilities)):
                 building = state.utilities[j]
