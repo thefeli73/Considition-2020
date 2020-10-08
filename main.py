@@ -15,7 +15,7 @@ game_layer = GameLayer(api_key)
 use_regulator = False  # turns on if map max temp >21c
 other_upgrade_threshold = 0.5
 time_until_run_ends = 90
-money_reserve_multiplier = 0
+money_reserve_multiplier = 0.5
 temp_acc_multiplier = 1.125
 rounds_between_energy = 5
 round_buffer = 78
@@ -47,7 +47,7 @@ def main():
     start_time = time.time()
     state = game_layer.game_state
     chart_map()
-    if state.max_temp >21:
+    if state.max_temp > 21:
         use_regulator = True
     while state.turn < state.max_turns:
         state = game_layer.game_state
@@ -108,15 +108,15 @@ def develop_society():
         build_residence_score = 0
     elif (current_tot_pop() - max_tot_pop() + state.housing_queue) > 15 and queue_timeout <= 0:
         build_residence_score = 1000
-    elif best_residence:
+    elif best_residence and best_residence[0] > 0:
         build_residence_score = best_residence[0]
     #
     upgrade_residence_score = 0
     #
-    if best_utility:
+    if best_utility and best_utility[0] > 0:
         build_utility_score = best_utility[0]
     #
-    if best_upgrade:
+    if best_upgrade and best_upgrade[0] > 0:
         build_upgrade_score = best_upgrade[0]
 
     decision = [
@@ -252,8 +252,8 @@ def calculate_best_upgrade(current_building):
         if (upgrade.name not in current_building.effects) and ((total_income() + effect.building_income_increase) > 50) and (money_reserve_multiplier*upgrade.cost < state.funds):
             average_outdoor_temp = (state.max_temp - state.min_temp)/2
 
-            average_heating_energy = (((21 - average_outdoor_temp) * blueprint.emissivity * effect.emissivity_multiplier) / 0.75)
-            old_average_heating_energy = (((21 - average_outdoor_temp) * blueprint.emissivity) / 0.75)
+            average_heating_energy = max((((21 - average_outdoor_temp) * blueprint.emissivity * effect.emissivity_multiplier) / 0.75), 0)
+            old_average_heating_energy = max((((21 - average_outdoor_temp) * blueprint.emissivity) / 0.75), 0)
 
             lifetime_energy = (base_energy_need + effect.base_energy_mwh_increase + average_heating_energy - effect.mwh_production) * rounds_left
             old_lifetime_energy = (base_energy_need + old_average_heating_energy) * rounds_left
